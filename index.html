@@ -157,7 +157,7 @@
       <div class="suspect">
         <img src="assets/1.png" alt="Alex G.">
         <h4>Alex G.</h4>
-        <p>A former IT technician recently let go after a heated argument with his manager.</p>
+        <p>A former IT technician recently let go after a heated argument with his manager.</fp>
       </div>
       <div class="suspect">
         <img src="assets/2.png" alt="Jamie R.">
@@ -188,21 +188,23 @@
     <button id="back-btn" onclick="goBack()">🔙 End Investigation</button>
 
     <hr style="margin-top: 40px; width: 100%; border-color: #00ffff30" />
-    <div style="text-align: center; margin-top: 20px;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px;">
       <h3>🕵️ Select the Suspect:</h3>
-      <select id="suspectSelect" style="padding: 8px; border-radius: 6px;">
-        <option disabled selected>Choose a suspect</option>
-        <option value="alex">Alex G.</option>
-        <option value="jamie">Jamie R.</option>
-        <option value="sarah">Sarah J.</option>
-        <option value="hacker">Unknown (The Shadow)</option>
-      </select>
-      <button onclick="accuseSuspect()">Accuse</button>
+      <div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 40px;">
+        <div>
+          <select id="suspectSelect" style="padding: 8px; border-radius: 6px;" onchange="previewSuspect()">
+            <option disabled selected>Choose a suspect</option>
+            <option value="alex">Alex G.</option>
+            <option value="jamie">Jamie R.</option>
+            <option value="sarah">Sarah J.</option>
+            <option value="hacker">Unknown (The Shadow)</option>
+          </select>
+          <button onclick="accuseSuspect()" style="margin-top: 10px;">Accuse</button>
+        </div>
+
+        <div id="accusedVisual" class="hidden" style="text-align: center;"></div>
+      </div>
     </div>
-
-    <!-- Suspect visual shown after confirmation -->
-    <div id="accusedVisual" class="hidden" style="margin-top: 40px; text-align: center;"></div>
-
     <!-- Confirm Modal -->
     <div id="confirmModal" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#1e1e1e; border-top: 2px solid #00ffff; padding: 20px; z-index: 999;">
       <h3>Are you sure?</h3>
@@ -210,7 +212,7 @@
       <button onclick="confirmAccusation()">✅ Confirm</button>
       <button onclick="cancelAccusation()">❌ Cancel</button>
     </div>
-  </div>
+  
 
   <!-- Modal -->
   <div id="modal" onclick="closeModal()">
@@ -376,6 +378,12 @@
         </div>
       `;
       container.classList.remove("hidden");
+    }
+    function previewSuspect() {
+      const select = document.getElementById("suspectSelect");
+      const value = select.value;
+      if (!value) return;
+      renderAccusedCard(value);
     }
   </script>
 </body>
