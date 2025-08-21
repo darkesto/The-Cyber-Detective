@@ -4,11 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cyber Detective</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
   <style>
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background-color: #121212;
+      background-color: #000C28;
       color: #e0e0e0;
       display: flex;
       flex-direction: column;
@@ -23,6 +24,9 @@
 
     p, li {
       line-height: 1.6;
+      max-width: 800px;
+      text-align: center;
+      margin:auto;
     }
 
     .hidden {
@@ -146,6 +150,7 @@
   </style>
 </head>
 <body>
+  <img src="assets/logo.png" alt="Cyber Detective Logo" style="max-width:200px; margin-bottom:20px;">
 
   <!-- Intro Page -->
   <div id="intro">
@@ -157,7 +162,7 @@
       <div class="suspect">
         <img src="assets/1.png" alt="Alex G.">
         <h4>Alex G.</h4>
-        <p>A former IT technician recently let go after a heated argument with his manager.</fp>
+        <p>A former IT technician recently let go after a heated argument with his manager.</p>
       </div>
       <div class="suspect">
         <img src="assets/2.png" alt="Jamie R.">
@@ -205,6 +210,7 @@
         <div id="accusedVisual" class="hidden" style="text-align: center;"></div>
       </div>
     </div>
+
     <!-- Confirm Modal -->
     <div id="confirmModal" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#1e1e1e; border-top: 2px solid #00ffff; padding: 20px; z-index: 999;">
       <h3>Are you sure?</h3>
@@ -212,9 +218,9 @@
       <button onclick="confirmAccusation()">✅ Confirm</button>
       <button onclick="cancelAccusation()">❌ Cancel</button>
     </div>
-  
+  </div>
 
-  <!-- Modal -->
+  <!-- Clue Modal -->
   <div id="modal" onclick="closeModal()">
     <div id="modal-content">
       <pre id="clueText">Clue content here...</pre>
@@ -222,54 +228,81 @@
   </div>
 
   <script>
+    // --- CASES: rewritten to be internal-only and cross-referenced with other suspects ---
     const cases = [
       {
         title: "Case 1: The Disgruntled Insider",
         clues: [
-          "📧 Email Backup:\n\nAn email draft found in the trash folder: \"They used me, then threw me away. Maybe they'll regret it.\"",
-          "🗒️ IT Log:\n\nLogin from IP 192.168.1.44 at 03:12 AM – unusual time. Accessed old HR files.",
-          "📄 Note in Locker:\n\nHandwritten note: \"You get what you give.\"\nFound in Alex G.’s old office drawer.",
-          "🖥️ USB Metadata:\n\nA USB device labeled 'Photos' accessed system files last week.",
-          "💬 Internal Chat Log:\n\n\"Did anyone hear about Alex’s threat after the last meeting?\"",
-          "🌐 Forum Post:\n\nUsername: _exemployee44_\n\"Let’s say... I even the score.\""
+          // 1 Auth log (odd hour), service account used; cross-reference Jamie failed attempts
+          "🔐 Authentication Log (SIEM extract):\n02:43:12 — Successful VPN auth via legacy service account 'svc-ops-archive'.\nNotes: Account owner not defined. 19 prior failed attempts from user 'jamie.r' observed earlier (02:31–02:42).",
+          // 2 File access (HR), path hints insider knowledge
+          "📁 File Access Audit:\n03:01:55 — Accessed //corp-share/HR/Offboarding/Policies_Archive.pdf from host 'WS-IT-04'.\nUser Context: SID maps to decommissioned IT workstation profile.",
+          // 3 Change ticket closed w/ initials
+          "🧾 Change Management Record:\nTicket CHG-2287 auto-closed at 03:14 with note 'restore job ran'. Approver field empty. Comment initials: 'AG'.",
+          // 4 USB mount on old IT machine
+          "💽 Device Control Log:\nHost 'WS-IT-04' mounted removable media 'USB-PHOTO-01' (read-only). Same host flagged as 'pending deallocation' last month.",
+          // 5 Email gateway autosave fragment (not explicit), cross-mention Sarah marketing
+          "✉️ Mail Gateway (Draft Autosave):\n03:18 — Temp message buffer updated from 'it-outbox@'. Content fragment: 'treated / not listened / finally done'. Routing to Marketing mailbox 'sarah.j' failed.",
+          // 6 Badge vs login mismatch, Alex offsite; red herring to 'Unknown'
+          "🚪 Badge vs VPN Correlation:\nNo physical entry recorded for 'Alex G.' past 24h, yet elevated access from IT subnet observed. TOR exit node sightings around the same window marked as 'UNKNOWN_ACTOR'."
         ]
       },
       {
         title: "Case 2: The Script Kiddie",
         clues: [
-          "📧 Email:\n\n\"lol i tried 100 times, but i got in xD\"\nSent to: bro@freemail.com",
-          "🗒️ Log File:\n\nFailed login attempts: 127\nFinal success at 02:56 AM\nUser agent: Mozilla/5.0 (generic)",
-          "📲 Phone Screenshot:\n\nPhoto of website admin panel posted on private Discord group.",
-          "🌍 Browser History:\n\nSearch terms: “how to hack login form”, “easy brute force tools”",
-          "💻 Desktop Background:\n\nAn edited image of the victim company's logo with clown emojis.",
-          "🧾 Ransom Message:\n\n\"Your firewall = wet paper. No worries, it’s just a joke... or is it?\""
+          // 1 Bruteforce pattern, generic UA; cross-mention Alex account lock
+          "🛡️ IDS/Firewall Summary:\n01:58–02:56 — Credential stuffing on /auth with user rotation (guest, test, admin-old). User-Agent string 'Mozilla/5.0'. Account 'alex.g' temporarily locked at 02:12.",
+          // 2 Admin panel weak endpoint found internally
+          "🖥️ Web App Log (Legacy Admin):\n02:56:03 — HTTP 200 at /admin-old/?panel=site using cookie 'PHPSESSID=...' from external IP. Referrer: none.",
+          // 3 VPN connection with student device fingerprint; cross-mention Sarah
+          "🔗 VPN Session Detail:\nNew device fingerprint 'LAPTOP-JR-02' connected via trial guest VPN at 02:58 for 4m12s. Internal wiki pages viewed: 'How_to_Reset_Admin_Theme'. Page 'BrandAssets' (owner: sarah.j) opened.",
+          // 4 Proxy/DNS: tool lookups
+          "🌐 Proxy & DNS Resolver:\nRepeated lookups: 'brutetool-lite.zip', 'panel_exploits.txt'. Destination content categorized as 'Hacking Tools'.",
+          // 5 Screenshot exfil via internal CDN (hint of Discord-like), internal-only log
+          "🖼️ CDN Access Log:\n03:04 — Upload to /cdn/user/temporary/ 'admin_dashboard.png' from guest VLAN. Retention: 24h.",
+          // 6 Ransom-like note dropped via web content manager; cross-mention 'Unknown'
+          "🧩 CMS Change Trace:\n03:06 — File '/public/notice.tmp' created by web-worker process.\nText: 'your layers are tissue' — tag set 'lol'. Correlation engine links phrasing style to prior 'UNKNOWN_ACTOR' notes."
         ]
       },
       {
         title: "Case 3: The Competitor",
         clues: [
-          "📧 Phishing Email:\n\n\"Please review the Q4 financial report immediately.\"\nFrom: ceo-office@fincorp.co",
-          "🗒️ Access Log:\n\nUser 'sarah.j' downloaded 'project_blueprints.zip' 5 minutes after the fake email.",
-          "📄 Calendar Entry:\n\nSarah J. had three external meetings this week labeled only as 'lunch'.",
-          "📁 USB Trace:\n\nA USB device named 'WORKFILES' was mounted 10 min after the large file download.",
-          "📞 Phone Memo:\n\nVoicemail: \"Don’t forget our NDA meeting. And be careful what you say at work.\"",
-          "🧾 Internal Email:\n\n\"Do not mention 'NovaTech' in emails anymore. Keep discussions verbal only.\""
+          // 1 Secure email gateway log—phish lookalike, internal view via proxy referrer
+          "📨 Secure Mail Gateway:\n11:02 — Message to 'sarah.j' from 'ceo-office@fincorp.co' passed SPF/DKIM checks (similar domain). Link redirected via tracking to '/download?file=q4_report.zip'.",
+          // 2 Share storage download of blueprints
+          "📦 Share Storage Audit:\n11:07 — Download 'project_blueprints.zip' (842 MB) by user 'sarah.j' from '\\\\design-share\\R&D'. Preceded by permission grant to 'Marketing-Temp' group.",
+          // 3 Print server job of confidential doc; cross-mention Alex request
+          "🖨️ Print Server Queue:\n11:12 — Job 'Blueprints_A3_Color' sent from 'MARKETING-LAPTOP-07'. Ticket REQ-4419 (raised by 'alex.g') asked for temporary printer access previous day.",
+          // 4 DNS/Proxy to competitor host
+          "🌐 DNS/Proxy Logs:\n11:20 — Outbound to 'cdn.novatech-resources.com/assets/img/' from 'MARKETING-LAPTOP-07'. Category: Business.",
+          // 5 MFA push approvals pattern (possible fatigue)
+          "🔒 MFA Event Timeline:\n11:03–11:06 — 5 MFA push approvals for user 'sarah.j' from same device ID. Geo: typical. Timeframe atypically dense.",
+          // 6 Calendar service audit; cross-mention Jamie
+          "📅 Calendar Service Audit:\n'Lunch — external' created by 'sarah.j' for Tue/Thu. Guest email masked (external). Prior event 'Website theme help — Jamie R.' last week."
         ]
       },
       {
         title: "Case 4: The Shadow Hacker",
         clues: [
-          "🧠 AI Behavior Log:\n\nAt 02:03 AM, the system flagged a user generating synthetic credentials with no link to existing profiles.",
-          "🌐 IP Trace:\n\nMultiple logins routed through TOR network, bouncing via 6 countries in under 2 seconds.",
-          "📝 Text File Found:\n\nFound on admin desktop: 'you can secure a door, but not the air.' File name: smoke.txt",
-          "🔎 DNS Logs:\n\nUnusual outbound traffic to a domain: unknown-realm.biz (registered anonymously 24h before attack)",
-          "🧬 Malware Signature:\n\nA custom code fragment: 'echo_ghost_17' – no match in existing databases.",
-          "💬 Chatroom Transcript:\n\nAn anonymous user: \"You watch the front door, I use the shadows. Nothing personal.\""
+          // 1 TOR / new temp user
+          "🕳️ SIEM Correlation:\n02:03 — Multiple auth attempts via TOR exit nodes. Transient account 'temp-sync' created and disabled within 6 minutes by 'system'.",
+          // 2 EDR PowerShell encoded payload
+          "🧪 EDR Telemetry (PowerShell):\n02:05 — Encoded command executed (length 1,024 chars) on 'APP-SRV-02' spawning 'rundll32'. Parent process: 'w3wp.exe'.",
+          // 3 DNS to fresh domain
+          "🌐 DNS Resolver:\n02:06 — Queries 'unknown-realm.biz' (registered <24h). TTL unusually low (60s).",
+          // 4 File integrity monitor—staging archive created and removed
+          "🗂️ File Integrity Monitor:\n02:07 — Created and deleted 'stage_tmp\\bundle.part03' under service account 'web-backup'. No user session mapped.",
+          // 5 Legacy host resurfaced—cross-mention Alex device
+          "🖥️ Asset Inventory:\n02:08 — Host 'WS-IT-04' (assigned to A. Gomez; status: decommission pending) beaconed for 11 seconds, then silent.",
+          // 6 Proxy phrasing match—cross-mentions Sarah, Jamie indirectly
+          "🗣️ Linguistic Fingerprint Engine:\nNote fragments seen in web-change temp files: 'doors / air / layers'. Prior similar phrasing tagged under unrelated incidents: marketing site edits (owner: sarah.j) and guest VLAN uploads (device: LAPTOP-JR-02)."
         ]
       }
     ];
 
+    // --- App state & elements ---
     let currentCase = null;
+    let selectedSuspect = null;
 
     const intro = document.getElementById("intro");
     const caseSection = document.getElementById("case");
@@ -287,6 +320,9 @@
 
       clueButtons.innerHTML = "";
       document.getElementById("accusedVisual").classList.add("hidden");
+      selectedSuspect = null;
+      document.getElementById("suspectSelect").selectedIndex = 0;
+
       currentCase.clues.forEach((clue, index) => {
         const btn = document.createElement("div");
         btn.className = "clue-box";
@@ -311,7 +347,7 @@
       intro.classList.remove("hidden");
     }
 
-    let selectedSuspect = null;
+    // Ground truth mapping (unchanged)
     const correctSuspect = {
       "Case 1: The Disgruntled Insider": "alex",
       "Case 2: The Script Kiddie": "jamie",
@@ -329,6 +365,8 @@
 
     function cancelAccusation() {
       selectedSuspect = null;
+      document.getElementById("suspectSelect").selectedIndex = 0;
+      document.getElementById("accusedVisual").classList.add("hidden");
       document.getElementById("confirmModal").style.display = "none";
     }
 
@@ -339,46 +377,29 @@
         ? "✅ Case closed. Well done, detective!"
         : "❌ The suspect escapes... The real hacker is still out there.";
       modal.style.display = "flex";
-      renderAccusedCard(selectedSuspect);
+      // (No re-render here; profile already shown by preview)
     }
 
     function renderAccusedCard(suspectKey) {
       const container = document.getElementById("accusedVisual");
       const suspectsData = {
-        alex: {
-          name: "Alex G.",
-          img: "1.png",
-          desc: "A former IT technician recently let go after a heated argument."
-        },
-        jamie: {
-          name: "Jamie R.",
-          img: "2.png",
-          desc: "A young student known for hacking small websites just for fun."
-        },
-        sarah: {
-          name: "Sarah J.",
-          img: "3.png",
-          desc: "A respected marketing manager... with unexplained meetings."
-        },
-        hacker: {
-          name: "Unknown (The Shadow)",
-          img: "hacker.png",
-          desc: "No records. No identity. Just traces left in the system..."
-        }
+        alex: { name: "Alex G.",   img: "1.png",      desc: "A former IT technician recently let go after a heated argument." },
+        jamie:{ name: "Jamie R.",  img: "2.png",      desc: "A young student known for hacking small websites just for fun." },
+        sarah:{ name: "Sarah J.",  img: "3.png",      desc: "A respected marketing manager... with unexplained meetings." },
+        hacker:{name: "Unknown (The Shadow)", img: "hacker.png", desc: "No records. No identity. Just traces left in the system..." }
       };
-
-      const suspect = suspectsData[suspectKey];
-      if (!suspect) return;
-
+      const s = suspectsData[suspectKey];
+      if (!s) return;
       container.innerHTML = `
         <div class="suspect" style="margin: 0 auto;">
-          <img src="assets/${suspect.img}" alt="${suspect.name}">
-          <h4>${suspect.name}</h4>
-          <p>${suspect.desc}</p>
+          <img src="assets/${s.img}" alt="${s.name}">
+          <h4>${s.name}</h4>
+          <p>${s.desc}</p>
         </div>
       `;
       container.classList.remove("hidden");
     }
+
     function previewSuspect() {
       const select = document.getElementById("suspectSelect");
       const value = select.value;
