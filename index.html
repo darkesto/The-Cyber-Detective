@@ -211,7 +211,7 @@
     </div>
 
     <!-- Confirm Modal -->
-    <div id="confirmModal" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#1e1e1e; border-top: 2px solid #00ffff; padding: 20px; z-index: 999;">
+    <div id="confirmModal" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#1e1e1e; border-top: 2px solid #00ffff;  z-index: 999;">
       <h3>Are you sure?</h3>
       <p>This action cannot be undone.</p>
       <button onclick="confirmAccusation()">✅ Confirm</button>
@@ -372,9 +372,9 @@
     function confirmAccusation() {
       document.getElementById("confirmModal").style.display = "none";
       const isCorrect = selectedSuspect === correctSuspect[currentCase.title];
-      clueText.textContent = isCorrect
-        ? "✅ Case closed. Well done, detective!"
-        : "❌ The suspect escapes... The real intruder is still out there.";
+      clueText.innerHTML = isCorrect
+        ? `<img src='assets/case_solved.png' alt='Case Solved' style='max-width:120px; border: 1px solid #00ffff; display:block; margin:0 auto 16px; border-radius:50%;'/>✅ Case closed. Well done, detective!`
+        : `<img src='assets/suspect_escape.png' alt='Suspect Escapes' style='max-width:120px; border: 1px solid #ff0000; display:block; margin:0 auto 16px; border-radius:50%;'/>❌ The suspect escapes... The real intruder is still out there.`;
       modal.style.display = "flex";
       // (No re-render here; profile already shown by preview)
     }
