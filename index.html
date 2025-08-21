@@ -86,7 +86,6 @@
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 20px;
       z-index: 1000;
     }
 
@@ -96,6 +95,7 @@
       border-radius: 8px;
       max-width: 600px;
       width: 100%;
+      margin: 20px;
       border: 1px solid #00ffff;
     }
 
@@ -196,6 +196,7 @@
     <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px;">
       <h3>🕵️ Select the Suspect:</h3>
       <div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 40px;">
+        <div id="accusedVisual" class="hidden" style="text-align: center;"></div>
         <div>
           <select id="suspectSelect" style="padding: 8px; border-radius: 6px;" onchange="previewSuspect()">
             <option disabled selected>Choose a suspect</option>
@@ -205,9 +206,7 @@
             <option value="hacker">Unknown (The Shadow)</option>
           </select>
           <button onclick="accuseSuspect()" style="margin-top: 10px;">Accuse</button>
-        </div>
-
-        <div id="accusedVisual" class="hidden" style="text-align: center;"></div>
+        </div> 
       </div>
     </div>
 
@@ -375,7 +374,7 @@
       const isCorrect = selectedSuspect === correctSuspect[currentCase.title];
       clueText.textContent = isCorrect
         ? "✅ Case closed. Well done, detective!"
-        : "❌ The suspect escapes... The real hacker is still out there.";
+        : "❌ The suspect escapes... The real intruder is still out there.";
       modal.style.display = "flex";
       // (No re-render here; profile already shown by preview)
     }
