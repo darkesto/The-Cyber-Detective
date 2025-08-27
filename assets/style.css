@@ -45,6 +45,11 @@
       color:var(--cyber);
       padding:4px 10px; border-radius:999px; font-size:14px;
     }
+    .badge.support {
+      background: #fd0;
+      color: #121212;
+      text-decoration: none;
+    }
 
     h1, h2, h3, h4 { text-align: center; color: var(--cyber); }
 
