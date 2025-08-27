@@ -4,153 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cyber Detective</title>
-  <link rel="icon" type="image/png" href="assets/icon.png">
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #000C28;
-      color: #e0e0e0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
-    }
-
-    h1, h2, h3, h4 {
-      text-align: center;
-      color: #00ffff;
-    }
-
-    p, li {
-      line-height: 1.6;
-      max-width: 800px;
-      text-align: center;
-      margin:auto;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    button {
-      padding: 12px 24px;
-      background-color: #1f1f1f;
-      border: 1px solid #00ffff;
-      color: #00ffff;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background 0.2s;
-      margin: 20px auto;
-      display: block;
-    }
-
-    button:hover {
-      background-color: #00ffff;
-      color: #121212;
-    }
-
-    .clues-container {
-      display: flex;
-      gap: 16px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .clue-box {
-      background-color: #1e1e1e;
-      border: 1px solid #00ffff;
-      border-radius: 10px;
-      padding: 20px;
-      width: 180px;
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .clue-box:hover {
-      transform: scale(1.05);
-      background-color: #00ffff;
-      color: #121212;
-    }
-
-    #modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      width: 100vw;
-      background-color: rgba(0, 0, 0, 0.85);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    #modal-content {
-      background-color: #1f1f1f;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 600px;
-      width: 100%;
-      margin: 20px;
-      border: 1px solid #00ffff;
-    }
-
-    #modal-content pre {
-      white-space: pre-wrap;
-      font-family: monospace;
-    }
-
-    #back-btn {
-      margin-top: 40px;
-    }
-
-    .suspects {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      margin: 20px 0;
-    }
-
-    .suspect {
-      background-color: #1f1f1f;
-      border: 1px solid #00ffff;
-      border-radius: 10px;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .suspect img {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 10px;
-      border: 2px solid #00ffff;
-    }
-
-    .suspect h4 {
-      margin: 10px 0 5px;
-      color: #00ffff;
-    }
-
-    @media (min-width: 768px) {
-      .suspects {
-        flex-direction: row;
-        justify-content: center;
-      }
-
-      .suspect {
-        width: 200px;
-      }
-    }
-  </style>
+  <link rel="icon" type="image/png" href="assets/img/icon.png">
+  <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <img src="assets/logo.png" alt="Cyber Detective Logo" style="max-width:200px; margin-bottom:20px;">
+  <!-- Floating Top Bar -->
+  <div class="topbar">
+    <div class="brand">
+      <img src="assets/img/logo.png" alt="Logo">
+      <span>Cyber Detective</span>
+    </div>
+    <div class="status">
+      <span class="badge">⏱️ <span id="globalTimer">--:--</span></span>
+      <span class="badge">🧩 Clues: <span id="clueProgress">0</span>/6</span>
+      <span class="badge" id="unlockBadge">Next clue in: --</span>
+    </div>
+  </div>
+
+  <img src="assets/img/logo.png" alt="Cyber Detective Logo" style="max-width:200px; margin:60px 0 20px;">
 
   <!-- Intro Page -->
   <div id="intro">
@@ -160,22 +31,22 @@
     <h3>Suspects:</h3>
     <div class="suspects">
       <div class="suspect">
-        <img src="assets/1.png" alt="Alex G.">
+        <img src="assets/img/1.png" alt="Alex G.">
         <h4>Alex G.</h4>
         <p>A former IT technician recently let go after a heated argument with his manager.</p>
       </div>
       <div class="suspect">
-        <img src="assets/2.png" alt="Jamie R.">
+        <img src="assets/img/2.png" alt="Jamie R.">
         <h4>Jamie R.</h4>
         <p>A young student known for bragging about hacking small websites just for fun.</p>
       </div>
       <div class="suspect">
-        <img src="assets/3.png" alt="Sarah J.">
+        <img src="assets/img/3.png" alt="Sarah J.">
         <h4>Sarah J.</h4>
         <p>A respected marketing manager... but with unexplained meetings with a competitor.</p>
       </div>
       <div class="suspect">
-        <img src="assets/hacker.png" alt="Unknown Hacker">
+        <img src="assets/img/hacker.png" alt="Unknown Hacker">
         <h4>Unknown (a.k.a. "The Shadow")</h4>
         <p>No records. No identity. Just traces left in the system...</p>
       </div>
@@ -187,8 +58,8 @@
 
   <!-- Case Display -->
   <div id="case" class="hidden">
-    <!-- Title intentionally hidden to preserve suspense -->
     <div class="clues-container" id="clueButtons"></div>
+    <div class="helper" id="unlockHelper">Clues unlock over time and require analyst actions to view. Work as a team.</div>
 
     <button id="back-btn" onclick="goBack()">🔙 End Investigation</button>
 
@@ -211,7 +82,7 @@
     </div>
 
     <!-- Confirm Modal -->
-    <div id="confirmModal" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#1e1e1e; border-top: 2px solid #00ffff;  z-index: 999;">
+    <div id="confirmModal" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#1e1e1e; border-top: 2px solid #00ffff; z-index: 999;">
       <h3>Are you sure?</h3>
       <p>This action cannot be undone.</p>
       <button onclick="confirmAccusation()">✅ Confirm</button>
@@ -219,134 +90,346 @@
     </div>
   </div>
 
-  <!-- Clue Modal -->
+  <!-- Clue / Debrief Modal -->
   <div id="modal" onclick="closeModal()">
     <div id="modal-content">
       <pre id="clueText">Clue content here...</pre>
     </div>
   </div>
 
+  <!-- TASK Modal (earn the clue) -->
+  <div id="taskModal">
+    <div id="taskCard">
+      <h3>🔎 Analyst Console</h3>
+      <div id="taskContext" style="white-space: pre-wrap; background:#0b1022; border:1px dashed #00ffff66; padding:10px; border-radius:8px;"></div>
+      <p id="taskQuestion" style="margin-top:12px;"></p>
+      <div class="options" id="taskOptions"></div>
+      <div class="helper" id="taskHint"></div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+        <button onclick="cancelTask()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // --- CASES: rewritten to be internal-only and cross-referenced with other suspects ---
+    /* =========================
+       CONFIG
+    ==========================*/
+    const TIMER_MINUTES = 40;            // total time (minutes)
+    const INITIAL_UNLOCK = 2;            // clues available at start
+    const UNLOCK_COOLDOWN_SECONDS = 200; // seconds between automatic unlocks
+    const WRONG_PENALTY_SECONDS = 300;    // timer penalty on wrong task answer
+
+    /* =========================
+       CASES + DEBRIEFS
+    ==========================*/
     const cases = [
       {
         title: "Case 1: The Disgruntled Insider",
         clues: [
-          // 1 Auth log (odd hour), service account used; cross-reference Jamie failed attempts
           "🔐 Authentication Log (SIEM extract):\n02:43:12 — Successful VPN auth via legacy service account 'svc-ops-archive'.\nNotes: Account owner not defined. 19 prior failed attempts from user 'jamie.r' observed earlier (02:31–02:42).",
-          // 2 File access (HR), path hints insider knowledge
           "📁 File Access Audit:\n03:01:55 — Accessed //corp-share/HR/Offboarding/Policies_Archive.pdf from host 'WS-IT-04'.\nUser Context: SID maps to decommissioned IT workstation profile.",
-          // 3 Change ticket closed w/ initials
           "🧾 Change Management Record:\nTicket CHG-2287 auto-closed at 03:14 with note 'restore job ran'. Approver field empty. Comment initials: 'AG'.",
-          // 4 USB mount on old IT machine
           "💽 Device Control Log:\nHost 'WS-IT-04' mounted removable media 'USB-PHOTO-01' (read-only). Same host flagged as 'pending deallocation' last month.",
-          // 5 Email gateway autosave fragment (not explicit), cross-mention Sarah marketing
           "✉️ Mail Gateway (Draft Autosave):\n03:18 — Temp message buffer updated from 'it-outbox@'. Content fragment: 'treated / not listened / finally done'. Routing to Marketing mailbox 'sarah.j' failed.",
-          // 6 Badge vs login mismatch, Alex offsite; red herring to 'Unknown'
           "🚪 Badge vs VPN Correlation:\nNo physical entry recorded for 'Alex G.' past 24h, yet elevated access from IT subnet observed. TOR exit node sightings around the same window marked as 'UNKNOWN_ACTOR'."
-        ]
+        ],
+        debrief: {
+          keyPoints: [
+            "Legacy service account used at odd hour (insider knowledge).",
+            "Access to HR Offboarding folder from decommissioned IT host WS-IT-04.",
+            "Change ticket auto-closed with initials 'AG' near the access time."
+          ],
+          misdirections: [
+            "Earlier failed attempts by 'jamie.r' (looks noisy but unrelated).",
+            "Mail fragment routed to 'sarah.j' (routing error, not intent)."
+          ]
+        }
       },
       {
         title: "Case 2: The Script Kiddie",
         clues: [
-          // 1 Bruteforce pattern, generic UA; cross-mention Alex account lock
-          "🛡️ IDS/Firewall Summary:\n01:58–02:56 — Credential stuffing on /auth with user rotation (guest, test, admin-old). User-Agent string 'Mozilla/5.0'. Account 'alex.g' temporarily locked at 02:12.",
-          // 2 Admin panel weak endpoint found internally
+          "🛡️ IDS/Firewall Summary:\n01:58–02:56 — Credential stuffing on /auth with user rotation (guest, test, admin-old). User-Agent 'Mozilla/5.0'. Account 'alex.g' locked at 02:12.",
           "🖥️ Web App Log (Legacy Admin):\n02:56:03 — HTTP 200 at /admin-old/?panel=site using cookie 'PHPSESSID=...' from external IP. Referrer: none.",
-          // 3 VPN connection with student device fingerprint; cross-mention Sarah
-          "🔗 VPN Session Detail:\nNew device fingerprint 'LAPTOP-JR-02' connected via trial guest VPN at 02:58 for 4m12s. Internal wiki pages viewed: 'How_to_Reset_Admin_Theme'. Page 'BrandAssets' (owner: sarah.j) opened.",
-          // 4 Proxy/DNS: tool lookups
-          "🌐 Proxy & DNS Resolver:\nRepeated lookups: 'brutetool-lite.zip', 'panel_exploits.txt'. Destination content categorized as 'Hacking Tools'.",
-          // 5 Screenshot exfil via internal CDN (hint of Discord-like), internal-only log
-          "🖼️ CDN Access Log:\n03:04 — Upload to /cdn/user/temporary/ 'admin_dashboard.png' from guest VLAN. Retention: 24h.",
-          // 6 Ransom-like note dropped via web content manager; cross-mention 'Unknown'
-          "🧩 CMS Change Trace:\n03:06 — File '/public/notice.tmp' created by web-worker process.\nText: 'your layers are tissue' — tag set 'lol'. Correlation engine links phrasing style to prior 'UNKNOWN_ACTOR' notes."
-        ]
+          "🔗 VPN Session Detail:\n'LAPTOP-JR-02' connected via guest VPN at 02:58 for 4m12s. Viewed wiki: 'How_to_Reset_Admin_Theme'. Page 'BrandAssets' (owner: sarah.j) opened.",
+          "🌐 Proxy & DNS Resolver:\nLookups: 'brutetool-lite.zip', 'panel_exploits.txt'. Category: Hacking Tools.",
+          "🖼️ CDN Access Log:\n03:04 — Upload '/cdn/user/temporary/admin_dashboard.png' from guest VLAN. Retention: 24h.",
+          "🧩 CMS Change Trace:\n03:06 — New temp file '/public/notice.tmp'. Text: 'your layers are tissue'. Correlated phrasing with prior 'UNKNOWN_ACTOR' notes."
+        ],
+        debrief: {
+          keyPoints: [
+            "Credential stuffing noise matches student patterns (generic UA).",
+            "Guest VPN device 'LAPTOP-JR-02' browsing basic how‑to pages.",
+            "Admin screenshot uploaded to temporary CDN (brag/souvenir)."
+          ],
+          misdirections: [
+            "Account lock on 'alex.g' occurs during noise, not proof of insider.",
+            "BrandAssets page owner 'sarah.j' is unrelated to access method."
+          ]
+        }
       },
       {
         title: "Case 3: The Competitor",
         clues: [
-          // 1 Secure email gateway log—phish lookalike, internal view via proxy referrer
-          "📨 Secure Mail Gateway:\n11:02 — Message to 'sarah.j' from 'ceo-office@fincorp.co' passed SPF/DKIM checks (similar domain). Link redirected via tracking to '/download?file=q4_report.zip'.",
-          // 2 Share storage download of blueprints
-          "📦 Share Storage Audit:\n11:07 — Download 'project_blueprints.zip' (842 MB) by user 'sarah.j' from '\\\\design-share\\R&D'. Preceded by permission grant to 'Marketing-Temp' group.",
-          // 3 Print server job of confidential doc; cross-mention Alex request
-          "🖨️ Print Server Queue:\n11:12 — Job 'Blueprints_A3_Color' sent from 'MARKETING-LAPTOP-07'. Ticket REQ-4419 (raised by 'alex.g') asked for temporary printer access previous day.",
-          // 4 DNS/Proxy to competitor host
-          "🌐 DNS/Proxy Logs:\n11:20 — Outbound to 'cdn.novatech-resources.com/assets/img/' from 'MARKETING-LAPTOP-07'. Category: Business.",
-          // 5 MFA push approvals pattern (possible fatigue)
-          "🔒 MFA Event Timeline:\n11:03–11:06 — 5 MFA push approvals for user 'sarah.j' from same device ID. Geo: typical. Timeframe atypically dense.",
-          // 6 Calendar service audit; cross-mention Jamie
-          "📅 Calendar Service Audit:\n'Lunch — external' created by 'sarah.j' for Tue/Thu. Guest email masked (external). Prior event 'Website theme help — Jamie R.' last week."
-        ]
+          "📨 Secure Mail Gateway:\n11:02 — Message to 'sarah.j' from 'ceo-office@fincorp.co' passed SPF/DKIM. Link to '/download?file=q4_report.zip'.",
+          "📦 Share Storage Audit:\n11:07 — Download 'project_blueprints.zip' (842 MB) by user 'sarah.j' from '\\\\design-share\\R&D'. Permission grant to 'Marketing-Temp' just before.",
+          "🖨️ Print Server Queue:\n11:12 — Job 'Blueprints_A3_Color' from 'MARKETING-LAPTOP-07'. Ticket REQ-4419 raised by 'alex.g' requested temp printer access prior day.",
+          "🌐 DNS/Proxy Logs:\n11:20 — Outbound to 'cdn.novatech-resources.com/assets/img/' from 'MARKETING-LAPTOP-07'.",
+          "🔒 MFA Timeline:\n11:03–11:06 — 5 MFA push approvals for 'sarah.j' from same device. Tight cluster suggests phish + fatigue.",
+          "📅 Calendar Audit:\n'Lunch — external' by 'sarah.j' Tue/Thu (guest masked). Previous 'Website theme help — Jamie R.' last week."
+        ],
+        debrief: {
+          keyPoints: [
+            "Convincing look‑alike email triggers link and immediate large download.",
+            "Temporary permissions + printer use right after download.",
+            "MFA fatigue pattern aligns with phish timing."
+          ],
+          misdirections: [
+            "Alex’s ticket about printers (operational, not access to R&D shares).",
+            "Jamie’s calendar mention (website theme, unrelated to R&D data)."
+          ]
+        }
       },
       {
         title: "Case 4: The Shadow Hacker",
         clues: [
-          // 1 TOR / new temp user
-          "🕳️ SIEM Correlation:\n02:03 — Multiple auth attempts via TOR exit nodes. Transient account 'temp-sync' created and disabled within 6 minutes by 'system'.",
-          // 2 EDR PowerShell encoded payload
-          "🧪 EDR Telemetry (PowerShell):\n02:05 — Encoded command executed (length 1,024 chars) on 'APP-SRV-02' spawning 'rundll32'. Parent process: 'w3wp.exe'.",
-          // 3 DNS to fresh domain
-          "🌐 DNS Resolver:\n02:06 — Queries 'unknown-realm.biz' (registered <24h). TTL unusually low (60s).",
-          // 4 File integrity monitor—staging archive created and removed
-          "🗂️ File Integrity Monitor:\n02:07 — Created and deleted 'stage_tmp\\bundle.part03' under service account 'web-backup'. No user session mapped.",
-          // 5 Legacy host resurfaced—cross-mention Alex device
-          "🖥️ Asset Inventory:\n02:08 — Host 'WS-IT-04' (assigned to A. Gomez; status: decommission pending) beaconed for 11 seconds, then silent.",
-          // 6 Proxy phrasing match—cross-mentions Sarah, Jamie indirectly
-          "🗣️ Linguistic Fingerprint Engine:\nNote fragments seen in web-change temp files: 'doors / air / layers'. Prior similar phrasing tagged under unrelated incidents: marketing site edits (owner: sarah.j) and guest VLAN uploads (device: LAPTOP-JR-02)."
-        ]
+          "🕳️ SIEM Correlation:\n02:03 — Multiple auth attempts via TOR. Transient account 'temp-sync' created/disabled within 6 minutes by 'system'.",
+          "🧪 EDR Telemetry (PowerShell):\n02:05 — Encoded command (1,024 chars) on 'APP-SRV-02' spawning 'rundll32'. Parent: 'w3wp.exe'.",
+          "🌐 DNS Resolver:\n02:06 — Queries 'unknown-realm.biz' (registered <24h). TTL=60s.",
+          "🗂️ File Integrity Monitor:\n02:07 — Created/deleted 'stage_tmp\\bundle.part03' under 'web-backup' service account.",
+          "🖥️ Asset Inventory:\n02:08 — 'WS-IT-04' (A. Gomez; decommission pending) beaconed for 11s then silent.",
+          "🗣️ Linguistic Fingerprint:\nPhrases in temp web files: 'doors / air / layers'. Similar to notes linked to other minor incidents (marketing edits; guest VLAN uploads)."
+        ],
+        debrief: {
+          keyPoints: [
+            "Use of TOR + temp account + web process parent indicates external actor.",
+            "Fresh domain with low TTL and staging artifacts (bundle.part03).",
+            "Touching a decommissioned host briefly to muddy attribution."
+          ],
+          misdirections: [
+            "Phrasing overlaps with unrelated internal incidents (style collision).",
+            "WS‑IT‑04 beacon could be a planted distraction referencing Alex."
+          ]
+        }
       }
     ];
 
-    // --- App state & elements ---
+    /* =========================
+       FORENSIC TASKS (one per clue)
+       Believable, short, and tied to the clue.
+    ==========================*/
+    const tasks = [
+      // Case 1 tasks (6)
+      [
+        {
+          context: "SIEM (auth events)\n02:31–02:42 many FAIL for user=jamie.r\n02:43:12 SUCCESS vpn user=svc-ops-archive",
+          question: "Which filter best isolates the suspicious success?",
+          options: ["event:auth AND user:jamie.r AND result:success", "event:auth AND user:svc-ops-archive AND result:success", "vpn AND user:alex.g AND result:any"],
+          correct: 1,
+          hint: "Service account + success at 02:43."
+        },
+        {
+          context: "File share access paths\n//corp-share/HR/Offboarding/Policies_Archive.pdf\nHost=WS-IT-04",
+          question: "What pivot would you run next?",
+          options: ["host:WS-IT-04 AND device:usb", "user:jamie.r AND path:R&D", "domain:novatech-resources.com"],
+          correct: 0,
+          hint: "Old IT host suggests device control check."
+        },
+        {
+          context: "Change ticket CHG-2287 closed 'restore job ran'\nApprover: (empty)  Initials: AG",
+          question: "What field helps confirm identity?",
+          options: ["Ticket approver email", "Comment initials mapping", "Ticket category"],
+          correct: 1,
+          hint: "Map initials → person."
+        },
+        {
+          context: "Device control\nHost=WS-IT-04 mounted USB-PHOTO-01 (RO)",
+          question: "Which correlation is most relevant?",
+          options: ["USB label content index", "Mount time vs HR access time", "Marketing calendar invites"],
+          correct: 1,
+          hint: "Timeline correlation."
+        },
+        {
+          context: "Mail gateway draft buffer\nText: 'treated / not listened / finally done'\nRouting to mailbox sarah.j failed",
+          question: "Best conclusion?",
+          options: ["Sarah sent the message", "Draft came from IT outbox; routing failed", "This proves external hacker"],
+          correct: 1,
+          hint: "Routing failure ≠ authorship."
+        },
+        {
+          context: "Badge vs VPN mismatch for Alex G.\nTOR exit nodes around same time",
+          question: "Which hypothesis fits best?",
+          options: ["Alex was in the office", "Someone used remote/hidden access", "It was a printer error"],
+          correct: 1,
+          hint: "No badge entry but VPN activity."
+        }
+      ],
+      // Case 2 tasks
+      [
+        {
+          context: "Firewall IDS: credential stuffing\nUA='Mozilla/5.0'\nAccount lock 'alex.g' at 02:12",
+          question: "Which part is the likely signal?",
+          options: ["Generic UA string", "Burst of login rotations", "Alex’s lock proves insider"],
+          correct: 1,
+          hint: "Look for patterns, not assumptions."
+        },
+        {
+          context: "Web app log: /admin-old/?panel=site\nHTTP 200 from external IP",
+          question: "Which pivot next?",
+          options: ["referrer:* (empty) + endpoint:/admin-old", "owner:sarah.j", "device:WS-IT-04"],
+          correct: 0,
+          hint: "Old admin endpoint without referrer."
+        },
+        {
+          context: "Guest VPN device: LAPTOP-JR-02\nViewed wiki 'How_to_Reset_Admin_Theme'",
+          question: "What does this suggest?",
+          options: ["Advanced attacker", "Beginner searching basic pages", "Printer misconfig"],
+          correct: 1,
+          hint: "Matches 'script kiddie' behavior."
+        },
+        {
+          context: "Proxy/DNS lookups: brutetool-lite.zip",
+          question: "Good defensive action?",
+          options: ["Blocklist domain and alert", "Reset all passwords globally", "Disable all printers"],
+          correct: 0,
+          hint: "Proportional response."
+        },
+        {
+          context: "CDN upload: admin_dashboard.png from guest VLAN",
+          question: "Why capture a screenshot?",
+          options: ["Brag / Proof of access", "Printer test", "VPN speed test"],
+          correct: 0,
+          hint: "Motivation, not function."
+        },
+        {
+          context: "CMS change trace: '/public/notice.tmp' text 'your layers are tissue'",
+          question: "Most accurate interpretation?",
+          options: ["Ransom note confirmed", "Style matches prior 'UNKNOWN_ACTOR' but not proof", "Sarah wrote it"],
+          correct: 1,
+          hint: "Correlation isn't attribution."
+        }
+      ],
+      // Case 3 tasks
+      [
+        {
+          context: "Mail gateway: ceo-office@fincorp.co\nSPF/DKIM pass. Link to '/download?file=q4_report.zip'",
+          question: "Best quick check?",
+          options: ["Compare domain lookalike + link redirect path", "Print the email", "Ask printer logs"],
+          correct: 0,
+          hint: "Lookalike domain & tracking link."
+        },
+        {
+          context: "Share download 'project_blueprints.zip' by sarah.j\nTemp group 'Marketing-Temp' granted",
+          question: "What stands out?",
+          options: ["Large file + new perms right before", "Printer color setting", "MFA disabled"],
+          correct: 0,
+          hint: "Sequence matters."
+        },
+        {
+          context: "Print job right after download\nTicket REQ-4419 raised by alex.g (printer access)",
+          question: "Most reasonable read?",
+          options: ["Alex printed blueprints", "Operational request; not proof of theft", "Printer hacked the share"],
+          correct: 1,
+          hint: "Avoid leaps."
+        },
+        {
+          context: "Proxy: cdn.novatech-resources.com/assets/img/",
+          question: "Which is true?",
+          options: ["Direct exfil endpoint", "Could be normal marketing asset", "Confirms Jamie’s role"],
+          correct: 1,
+          hint: "Not every external call is evil."
+        },
+        {
+          context: "MFA pushes x5 within 3 minutes",
+          question: "Likely tactic?",
+          options: ["MFA fatigue after phish", "Hardware failure", "Office party"],
+          correct: 0,
+          hint: "Timing cluster."
+        },
+        {
+          context: "Calendar: 'Lunch — external' (guest masked)\nPrevious 'Website theme help — Jamie R.'",
+          question: "Best conclusion?",
+          options: ["Meeting proves collusion", "Weak signal; needs more evidence", "Lunch equals breach"],
+          correct: 1,
+          hint: "Stay cautious."
+        }
+      ],
+      // Case 4 tasks
+      [
+        {
+          context: "SIEM: TOR attempts\nTransient 'temp-sync' created & disabled by 'system'",
+          question: "Strongest signal?",
+          options: ["Temp account lifecycle + TOR", "Marketing calendar", "Printer model"],
+          correct: 0,
+          hint: "Process + network together."
+        },
+        {
+          context: "EDR: Encoded PowerShell from w3wp.exe → rundll32",
+          question: "What’s the pivot?",
+          options: ["Parent process chain on APP-SRV-02", "Change printer settings", "Check cafeteria menu"],
+          correct: 0,
+          hint: "Follow the process tree."
+        },
+        {
+          context: "DNS: unknown-realm.biz (domain age <24h, TTL=60s)",
+          question: "Risk rating?",
+          options: ["Suspicious C2-like", "Benign CDN", "Internal intranet"],
+          correct: 0,
+          hint: "Fresh + low TTL."
+        },
+        {
+          context: "FIM: create/delete stage_tmp\\bundle.part03 under 'web-backup'",
+          question: "Why do this?",
+          options: ["Staging chunks for exfil", "Printer cache", "Wi‑Fi handshake"],
+          correct: 0,
+          hint: "Bundle parts = staging."
+        },
+        {
+          context: "Asset: WS-IT-04 beaconed for 11s (decommission pending)",
+          question: "Most plausible?",
+          options: ["Attacker touched dormant host to confuse logs", "Alex came back to work", "DNS typo"],
+          correct: 0,
+          hint: "Misdirection tactic."
+        },
+        {
+          context: "Linguistic match to 'doors/air/layers' in temp files",
+          question: "Correct conclusion?",
+          options: ["Style overlap ≠ identity", "Sarah wrote it", "Jamie confessed"],
+          correct: 0,
+          hint: "Correlation ≠ causation."
+        }
+      ]
+    ];
+
+    /* =========================
+       STATE & ELEMENTS
+    ==========================*/
     let currentCase = null;
     let selectedSuspect = null;
+    let totalSeconds = 0;
+    let timerId = null;
+    let cooldown = 0;
+    let unlockedCount = 0;
+    let solved = [];          // per clue index: true if clue task completed
+    let workingClue = null;   // index of clue being attempted
+    let hintTimer = null;
 
     const intro = document.getElementById("intro");
     const caseSection = document.getElementById("case");
     const modal = document.getElementById("modal");
     const clueText = document.getElementById("clueText");
     const clueButtons = document.getElementById("clueButtons");
+    const globalTimer = document.getElementById("globalTimer");
+    const clueProgress = document.getElementById("clueProgress");
+    const unlockBadge  = document.getElementById("unlockBadge");
 
-    document.getElementById("startBtn").addEventListener("click", startGame);
+    const taskModal = document.getElementById("taskModal");
+    const taskContext = document.getElementById("taskContext");
+    const taskQuestion = document.getElementById("taskQuestion");
+    const taskOptions = document.getElementById("taskOptions");
+    const taskHint = document.getElementById("taskHint");
 
-    function startGame() {
-      const randomIndex = Math.floor(Math.random() * cases.length);
-      currentCase = cases[randomIndex];
-      intro.classList.add("hidden");
-      caseSection.classList.remove("hidden");
-
-      clueButtons.innerHTML = "";
-      document.getElementById("accusedVisual").classList.add("hidden");
-      selectedSuspect = null;
-      document.getElementById("suspectSelect").selectedIndex = 0;
-
-      currentCase.clues.forEach((clue, index) => {
-        const btn = document.createElement("div");
-        btn.className = "clue-box";
-        btn.textContent = `🔍 Clue ${index + 1}`;
-        btn.onclick = () => showClue(index);
-        clueButtons.appendChild(btn);
-      });
-    }
-
-    function showClue(index) {
-      clueText.textContent = currentCase.clues[index];
-      modal.style.display = "flex";
-    }
-
-    function closeModal() {
-      modal.style.display = "none";
-    }
-
-    function goBack() {
-      currentCase = null;
-      caseSection.classList.add("hidden");
-      intro.classList.remove("hidden");
-    }
-
-    // Ground truth mapping (unchanged)
+    // Ground truth mapping
     const correctSuspect = {
       "Case 1: The Disgruntled Insider": "alex",
       "Case 2: The Script Kiddie": "jamie",
@@ -354,14 +437,186 @@
       "Case 4: The Shadow Hacker": "hacker"
     };
 
+    document.getElementById("startBtn").addEventListener("click", startGame);
+
+    function startGame() {
+      const randomIndex = Math.floor(Math.random() * cases.length);
+      currentCase = cases[randomIndex];
+
+      intro.classList.add("hidden");
+      caseSection.classList.remove("hidden");
+
+      // reset state
+      selectedSuspect = null;
+      document.getElementById("suspectSelect").selectedIndex = 0;
+      document.getElementById("accusedVisual").classList.add("hidden");
+      solved = Array(6).fill(false);
+
+      // build clue buttons all locked
+      clueButtons.innerHTML = "";
+      for (let i=0;i<currentCase.clues.length;i++){
+        const btn = document.createElement("div");
+        btn.className = "clue-box locked";
+        btn.textContent = `🔍 Clue ${i + 1}`;
+        btn.dataset.index = i;
+        btn.onclick = () => handleClueClick(btn, i);
+        clueButtons.appendChild(btn);
+      }
+
+      // unlock initial
+      unlockedCount = 0;
+      for(let i=0;i<INITIAL_UNLOCK;i++){ unlockNextClue(); }
+      clueProgress.textContent = unlockedCount.toString();
+
+      // timer setup
+      totalSeconds = TIMER_MINUTES * 60;
+      cooldown = UNLOCK_COOLDOWN_SECONDS;
+      updateTopbar();
+      if (timerId) clearInterval(timerId);
+      timerId = setInterval(tick, 1000);
+    }
+
+    function handleClueClick(btn, index){
+      if (btn.classList.contains("locked")) return;
+      // If already solved, just show clue
+      if (solved[index]) { showClue(index); return; }
+      // else open task for this clue
+      openTask(index);
+    }
+
+
+    //Helper function
+    function tryAgain() {
+      document.getElementById("modal").style.display = "none";
+      const tm = document.getElementById("taskModal");
+      if (tm) tm.style.display = "none";
+      goBack();
+    }
+
+    function tick(){
+      totalSeconds--;
+      if (totalSeconds <= 0){
+        clearInterval(timerId); timerId = null;
+        clueText.innerHTML = "⏰ Time is up! Logs rotated and evidence lost.\n❌ The intruder remains unidentified.";
+        modal.style.display = "flex";
+        lockAllClues();
+        taskModal.style.display = "none";
+        return;
+      }
+
+      if (unlockedCount < 6){
+        cooldown--;
+        if (cooldown <= 0){
+          unlockNextClue();
+          cooldown = UNLOCK_COOLDOWN_SECONDS;
+        }
+      } else {
+        cooldown = 0;
+      }
+
+      updateTopbar();
+    }
+
+    function updateTopbar(){
+      globalTimer.textContent = formatMMSS(totalSeconds);
+      clueProgress.textContent = unlockedCount.toString();
+      unlockBadge.textContent = (unlockedCount < 6)
+        ? `Next clue in: ${formatMMSS(cooldown)}`
+        : "All clues unlocked";
+    }
+
+    function unlockNextClue(){
+      const boxes = Array.from(document.querySelectorAll(".clue-box"));
+      const locked = boxes.find(b => b.classList.contains("locked"));
+      if (!locked) return;
+      locked.classList.remove("locked");
+      locked.classList.add("unlocked");
+      unlockedCount++;
+    }
+
+    function lockAllClues(){
+      document.querySelectorAll(".clue-box").forEach(b=>{
+        b.classList.add("locked");
+        b.classList.remove("unlocked");
+      });
+    }
+
+    /* ====== TASK FLOW ====== */
+    function openTask(clueIndex){
+      workingClue = clueIndex;
+      const caseIdx = cases.findIndex(c=>c.title===currentCase.title);
+      const t = tasks[caseIdx][clueIndex];
+
+      taskContext.textContent = t.context;
+      taskQuestion.textContent = t.question;
+      taskHint.textContent = ""; // no hint yet
+      taskOptions.innerHTML = "";
+      t.options.forEach((opt, i)=>{
+        const b = document.createElement("button");
+        b.textContent = `• ${opt}`;
+        b.onclick = ()=> submitTaskAnswer(i, t.correct, t.hint);
+        taskOptions.appendChild(b);
+      });
+
+      taskModal.style.display = "flex";
+
+      // clear old timer, start new 3-min timer for hint
+      if (hintTimer) clearTimeout(hintTimer);
+      hintTimer = setTimeout(()=>{
+        taskHint.textContent = "💡 Hint: " + t.hint;
+      }, 180000); // 3 minutes
+    }
+
+    function submitTaskAnswer(choice, correct, hint){
+      if (choice === correct){
+        solved[workingClue] = true;
+        const btn = document.querySelector(`.clue-box[data-index="${workingClue}"]`);
+        if (btn){ btn.classList.add("solved"); }
+        taskModal.style.display = "none";
+        if (hintTimer) clearTimeout(hintTimer);
+        showClue(workingClue);
+      } else {
+        totalSeconds = Math.max(0, totalSeconds - WRONG_PENALTY_SECONDS);
+        taskHint.textContent = `❌ Not quite. ${WRONG_PENALTY_SECONDS}s penalty applied.`;
+        updateTopbar();
+      }
+    }
+
+    function cancelTask(){
+      taskModal.style.display = "none";
+      if (hintTimer) clearTimeout(hintTimer);
+    }
+
+    /* ====== CLUE MODAL ====== */
+    function showClue(index) {
+      clueText.textContent = currentCase.clues[index];
+      modal.style.display = "flex";
+    }
+    function closeModal() { modal.style.display = "none"; }
+
+    /* ====== NAV ====== */
+    function goBack() {
+      if (timerId){ clearInterval(timerId); timerId = null; }
+      currentCase = null;
+      caseSection.classList.add("hidden");
+      intro.classList.remove("hidden");
+      // reset topbar badges
+      globalTimer.textContent = "--:--";
+      clueProgress.textContent = "0";
+      unlockBadge.textContent = "Next clue in: --";
+      taskModal.style.display = "none";
+    }
+
+    /* ====== ACCUSATION ====== */
     function accuseSuspect() {
       const select = document.getElementById("suspectSelect");
       const value = select.value;
       if (!value) return;
       selectedSuspect = value;
+      // show preview card immediately
+      renderAccusedCard(value);
       document.getElementById("confirmModal").style.display = "block";
     }
-
     function cancelAccusation() {
       selectedSuspect = null;
       document.getElementById("suspectSelect").selectedIndex = 0;
@@ -372,38 +627,78 @@
     function confirmAccusation() {
       document.getElementById("confirmModal").style.display = "none";
       const isCorrect = selectedSuspect === correctSuspect[currentCase.title];
-      clueText.innerHTML = isCorrect
-        ? `<img src='assets/case_solved.png' alt='Case Solved' style='max-width:120px; border: 1px solid #00ffff; display:block; margin:0 auto 16px; border-radius:50%;'/>✅ Case closed. Well done, detective!`
-        : `<img src='assets/suspect_escape.png' alt='Suspect Escapes' style='max-width:120px; border: 1px solid #ff0000; display:block; margin:0 auto 16px; border-radius:50%;'/>❌ The suspect escapes... The real intruder is still out there.`;
+
+      // stop timer on decision
+      if (timerId){ clearInterval(timerId); timerId = null; }
+
+      if (isCorrect){
+        // Calculate score: 10 pts per second left
+        const score = totalSeconds * 10;
+
+        // build debrief
+        const d = currentCase.debrief;
+        const key = d?.keyPoints || [];
+        const mis = d?.misdirections || [];
+        const solvedArt = `<img src='assets/img/case_solved.png' alt='Case Solved' style='max-width:120px; border: 1px solid var(--cyber); display:block; margin:0 auto 16px; border-radius:50%;'/>`;
+        const lines = [
+          "✅ Case closed. Well done, detective!",
+          `🏆 Score: ${score.toLocaleString()} pts`,
+          "",
+          "— Key Evidence —",
+          ...key.map((k,i)=>`${i+1}. ${k}`),
+          "",
+          "— Misdirections —",
+          ...mis.map((m,i)=>`${i+1}. ${m}`)
+        ].join("\n");
+
+        const html = solvedArt + lines
+          .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+          .replace(/\n/g,"<br>");
+        clueText.innerHTML = html;
+      } else {
+        const failArt = `<img src='assets/img/suspect_escape.png' alt='Suspect Escapes' style='max-width:120px; border: 1px solid #ff0000; display:block; margin:0 auto 16px; border-radius:50%;'/>`;
+        clueText.innerHTML = failArt + 
+          "❌ Game Over — The suspect escapes... The real intruder is still out there." +
+          `<div style="text-align:center; margin-top:12px;">
+            <button onclick="tryAgain()">🔁 Try Again</button>
+          </div>`;
+      }
       modal.style.display = "flex";
-      // (No re-render here; profile already shown by preview)
+      const taskModalEl = document.getElementById("taskModal");
+      if (taskModalEl) taskModalEl.style.display = "none";
     }
 
     function renderAccusedCard(suspectKey) {
       const container = document.getElementById("accusedVisual");
       const suspectsData = {
-        alex: { name: "Alex G.",   img: "1.png",      desc: "A former IT technician recently let go after a heated argument." },
-        jamie:{ name: "Jamie R.",  img: "2.png",      desc: "A young student known for hacking small websites just for fun." },
-        sarah:{ name: "Sarah J.",  img: "3.png",      desc: "A respected marketing manager... with unexplained meetings." },
-        hacker:{name: "Unknown (The Shadow)", img: "hacker.png", desc: "No records. No identity. Just traces left in the system..." }
+        alex:   { name: "Alex G.", img: "1.png",      desc: "A former IT technician recently let go after a heated argument." },
+        jamie:  { name: "Jamie R.", img: "2.png",     desc: "A young student known for hacking small websites just for fun." },
+        sarah:  { name: "Sarah J.", img: "3.png",     desc: "A respected marketing manager... with unexplained meetings." },
+        hacker: { name: "Unknown (The Shadow)", img: "hacker.png", desc: "No records. No identity. Just traces left in the system..." }
       };
       const s = suspectsData[suspectKey];
       if (!s) return;
       container.innerHTML = `
         <div class="suspect" style="margin: 0 auto;">
-          <img src="assets/${s.img}" alt="${s.name}">
+          <img src="assets/img/${s.img}" alt="${s.name}">
           <h4>${s.name}</h4>
           <p>${s.desc}</p>
         </div>
       `;
       container.classList.remove("hidden");
     }
-
     function previewSuspect() {
       const select = document.getElementById("suspectSelect");
       const value = select.value;
       if (!value) return;
       renderAccusedCard(value);
+    }
+
+    /* ====== UTILS ====== */
+    function formatMMSS(total){
+      const m = Math.floor(total/60);
+      const s = total%60;
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
   </script>
 </body>

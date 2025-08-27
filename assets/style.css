@@ -1,0 +1,210 @@
+ :root{
+      --cyber:#00ffff;
+      --bg:#000C28;
+      --panel:#1f1f1f;
+      --text:#e0e0e0;
+      --muted:#8aa0b3;
+      --danger:#ff4d4d;
+      --ok:#3ddc97;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    /* top status bar */
+    .topbar{
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid #00ffff33;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      z-index: 1200;
+    }
+    .topbar .brand{
+      display:flex; align-items:center; gap:10px; color:var(--cyber);
+      font-weight:600;
+    }
+    .topbar img{ height:28px; border-radius:6px; }
+    .topbar .status{
+      display:flex; gap:16px; align-items:center; font-variant-numeric: tabular-nums;
+    }
+    .badge{
+      border:1px solid var(--cyber);
+      color:var(--cyber);
+      padding:4px 10px; border-radius:999px; font-size:14px;
+    }
+
+    h1, h2, h3, h4 { text-align: center; color: var(--cyber); }
+
+    p, li {
+      line-height: 1.6;
+      max-width: 800px;
+      text-align: center;
+      margin:auto;
+    }
+
+    .hidden { display: none; }
+
+    button {
+      padding: 12px 24px;
+      background-color: #1f1f1f;
+      border: 1px solid var(--cyber);
+      color: var(--cyber);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+      margin: 20px auto;
+      display: block;
+    }
+    button:hover { background-color: var(--cyber); color: #121212; }
+
+    .clues-container {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .clue-box {
+      background-color: #1e1e1e;
+      border: 1px solid var(--cyber);
+      border-radius: 10px;
+      padding: 20px;
+      width: 180px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s, color 0.2s, opacity .2s;
+      position: relative;
+    }
+    .clue-box:hover { transform: scale(1.05); background-color: var(--cyber); color: #121212; }
+    .clue-box.locked{ opacity: .5; cursor: not-allowed; border-style: dashed; }
+    .clue-box.locked::after{ content:"🔒"; position:absolute; top:8px; right:10px; opacity:.9; }
+    .clue-box.unlocked::after{ content:"🔓"; position:absolute; top:8px; right:10px; opacity:.7; }
+    .clue-box.solved{ box-shadow: 0 0 0 2px var(--ok) inset; }
+    .helper { color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+    /* big modal (clue & debrief) */
+    #modal {
+      position: fixed; top: 0; left: 0; height: 100vh; width: 100vw;
+      background-color: rgba(0, 0, 0, 0.85);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    #modal-content {
+      background-color: #1f1f1f;
+      padding: 20px; border-radius: 8px;
+      max-width: 600px; width: 100%;
+      margin: 20px; border: 1px solid var(--cyber);
+    }
+    #modal-content pre { white-space: pre-wrap; font-family: monospace; }
+
+    /* TASK modal (to unlock clues) */
+    #taskModal {
+      position: fixed; top: 0; left: 0; height: 100vh; width: 100vw;
+      background-color: rgba(0,0,0,.85);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1100;
+    }
+    #taskCard{
+      background: #111827; color: var(--text);
+      border:1px solid var(--cyber);
+      border-radius:10px; padding:20px; max-width:700px; width:calc(100% - 40px);
+      font-family: monospace;
+    }
+    #taskCard h3{ margin-top:0; }
+    .options{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+    .options button{ margin:0; text-align:left; }
+
+    #back-btn { margin-top: 40px; }
+
+    .suspects { display: flex; flex-direction: column; gap: 20px; margin: 20px 0; }
+    .suspect {
+      background-color: #1f1f1f;
+      border: 1px solid var(--cyber);
+      border-radius: 10px;
+      padding: 20px; text-align: center;
+    }
+    .suspect img {
+      width: 120px; height: 120px; border-radius: 50%;
+      object-fit: cover; margin-bottom: 10px;
+      border: 2px solid var(--cyber);
+    }
+    .suspect h4 { margin: 10px 0 5px; color: var(--cyber); }
+
+    @media (min-width: 768px) {
+      .suspects { flex-direction: row; justify-content: center; }
+      .suspect { width: 200px; }
+    }
+    /* ===== Mobile-friendly topbar badges ===== */
+
+    /* general tightening on smaller screens */
+    @media (max-width: 900px) {
+      .topbar { padding: 6px 10px; }
+      .badge { padding: 4px 8px; font-size: 13px; }
+      .topbar img { height: 24px; }
+    }
+
+    /* tablets / small phones: allow gentle horizontal scroll if needed */
+    @media (max-width: 700px) {
+      .topbar .status{
+        gap: 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        max-width: 65vw;            /* keep it tidy */
+        white-space: nowrap;
+      }
+      .badge { padding: 3px 7px; font-size: 12px; }
+    }
+
+    /* narrow phones: wrap badges to multiple lines and left-align */
+    @media (max-width: 480px) {
+      .topbar{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+      }
+      .topbar .brand{
+        justify-content: center;
+      }
+      .topbar .brand span{
+        font-size: 14px;
+      }
+      .topbar .status{
+        display: flex;
+        flex-wrap: wrap;            /* wrap badges instead of overflow */
+        justify-content: center;    /* center them under the logo */
+        gap: 8px 6px;
+        max-width: 100%;
+        overflow: visible;          /* disable the scroll in this layout */
+        white-space: normal;
+      }
+      .badge{
+        padding: 3px 8px;
+        font-size: 12px;
+        line-height: 1.2;
+      }
+    }
+
+    /* extra tiny screens: hide the text label, keep the numbers readable */
+    @media (max-width: 360px) {
+      .topbar .brand span{ display: none; }   /* icon-only brand */
+      .badge{
+        padding: 2px 6px;
+        font-size: 11px;
+      }
+    }
