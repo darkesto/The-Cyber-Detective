@@ -222,191 +222,338 @@
       }
     ];
 
+    
     /* =========================
-       FORENSIC TASKS (one per clue)
-    ==========================*/
-    const tasks = [
-      // Case 1 tasks (6)
-      [
-        {
-          context: "SIEM (auth events)\n02:31–02:42 many FAIL for user=jamie.r\n02:43:12 SUCCESS vpn user=svc-ops-archive",
-          question: "Which filter best isolates the suspicious success?",
-          options: ["event:auth AND user:jamie.r AND result:success", "event:auth AND user:svc-ops-archive AND result:success", "vpn AND user:alex.g AND result:any"],
-          correct: 1,
-          hint: "Service account + success at 02:43."
-        },
-        {
-          context: "File share access paths\n//corp-share/HR/Offboarding/Policies_Archive.pdf\nHost=WS-IT-04",
-          question: "What pivot would you run next?",
-          options: ["host:WS-IT-04 AND device:usb", "user:jamie.r AND path:R&D", "domain:novatech-resources.com"],
-          correct: 0,
-          hint: "Old IT host suggests device control check."
-        },
-        {
-          context: "Change ticket CHG-2287 closed 'restore job ran'\nApprover: (empty)  Initials: AG",
-          question: "What field helps confirm identity?",
-          options: ["Ticket approver email", "Comment initials mapping", "Ticket category"],
-          correct: 1,
-          hint: "Map initials → person."
-        },
-        {
-          context: "Device control\nHost=WS-IT-04 mounted USB-PHOTO-01 (RO)",
-          question: "Which correlation is most relevant?",
-          options: ["USB label content index", "Mount time vs HR access time", "Marketing calendar invites"],
-          correct: 1,
-          hint: "Timeline correlation."
-        },
-        {
-          context: "Mail gateway draft buffer\nText: 'treated / not listened / finally done'\nRouting to mailbox sarah.j failed",
-          question: "Best conclusion?",
-          options: ["Sarah sent the message", "Draft came from IT outbox; routing failed", "This proves external hacker"],
-          correct: 1,
-          hint: "Routing failure ≠ authorship."
-        },
-        {
-          context: "Badge vs VPN mismatch for Alex G.\nTOR exit nodes around same time",
-          question: "Which hypothesis fits best?",
-          options: ["Alex was in the office", "Someone used remote/hidden access", "It was a printer error"],
-          correct: 1,
-          hint: "No badge entry but VPN activity."
-        }
+   FORENSIC TASKS (one per clue)
+   With 4–5 answer options each
+  ==========================*/
+  const tasks = [
+  // Case 1 tasks (6)
+  [
+    {
+      context: "SIEM (auth events)\n02:31–02:42 many FAIL for user=jamie.r\n02:43:12 SUCCESS vpn user=svc-ops-archive",
+      question: "Which filter best isolates the suspicious success?",
+      options: [
+        "event:auth AND user:jamie.r AND result:success",
+        "event:auth AND user:svc-ops-archive AND result:success", // ✅
+        "vpn AND user:alex.g AND result:any",
+        "event:auth AND user:sarah.j AND result:fail",
+        "event:auth AND ip:192.168.1.12"
       ],
-      // Case 2 tasks
-      [
-        {
-          context: "Firewall IDS: credential stuffing\nUA='Mozilla/5.0'\nAccount lock 'alex.g' at 02:12",
-          question: "Which part is the likely signal?",
-          options: ["Generic UA string", "Burst of login rotations", "Alex’s lock proves insider"],
-          correct: 1,
-          hint: "Look for patterns, not assumptions."
-        },
-        {
-          context: "Web app log: /admin-old/?panel=site\nHTTP 200 from external IP",
-          question: "Which pivot next?",
-          options: ["referrer:* (empty) + endpoint:/admin-old", "owner:sarah.j", "device:WS-IT-04"],
-          correct: 0,
-          hint: "Old admin endpoint without referrer."
-        },
-        {
-          context: "Guest VPN device: LAPTOP-JR-02\nViewed wiki 'How_to_Reset_Admin_Theme'",
-          question: "What does this suggest?",
-          options: ["Advanced attacker", "Beginner searching basic pages", "Printer misconfig"],
-          correct: 1,
-          hint: "Matches 'script kiddie' behavior."
-        },
-        {
-          context: "Proxy/DNS lookups: brutetool-lite.zip",
-          question: "Good defensive action?",
-          options: ["Blocklist domain and alert", "Reset all passwords globally", "Disable all printers"],
-          correct: 0,
-          hint: "Proportional response."
-        },
-        {
-          context: "CDN upload: admin_dashboard.png from guest VLAN",
-          question: "Why capture a screenshot?",
-          options: ["Brag / Proof of access", "Printer test", "VPN speed test"],
-          correct: 0,
-          hint: "Motivation, not function."
-        },
-        {
-          context: "CMS change trace: '/public/notice.tmp' text 'your layers are tissue'",
-          question: "Most accurate interpretation?",
-          options: ["Ransom note confirmed", "Style matches prior 'UNKNOWN_ACTOR' but not proof", "Sarah wrote it"],
-          correct: 1,
-          hint: "Correlation isn't attribution."
-        }
+      correct: 1,
+      hint: "Service account + success at 02:43."
+    },
+    {
+      context: "File share access paths\n//corp-share/HR/Offboarding/Policies_Archive.pdf\nHost=WS-IT-04",
+      question: "What pivot would you run next?",
+      options: [
+        "host:WS-IT-04 AND device:usb", // ✅
+        "user:jamie.r AND path:R&D",
+        "dns:novatech-resources.com",
+        "host:MARKETING-LAPTOP-07 AND printer:jobs",
+        "ip:10.0.0.55"
       ],
-      // Case 3 tasks
-      [
-        {
-          context: "Mail gateway: ceo-office@fincorp.co\nSPF/DKIM pass. Link to '/download?file=q4_report.zip'",
-          question: "Best quick check?",
-          options: ["Compare domain lookalike + link redirect path", "Print the email", "Ask printer logs"],
-          correct: 0,
-          hint: "Lookalike domain & tracking link."
-        },
-        {
-          context: "Share download 'project_blueprints.zip' by sarah.j\nTemp group 'Marketing-Temp' granted",
-          question: "What stands out?",
-          options: ["Large file + new perms right before", "Printer color setting", "MFA disabled"],
-          correct: 0,
-          hint: "Sequence matters."
-        },
-        {
-          context: "Print job right after download\nTicket REQ-4419 raised by alex.g (printer access)",
-          question: "Most reasonable read?",
-          options: ["Alex printed blueprints", "Operational request; not proof of theft", "Printer hacked the share"],
-          correct: 1,
-          hint: "Avoid leaps."
-        },
-        {
-          context: "Proxy: cdn.novatech-resources.com/assets/img/",
-          question: "Which is true?",
-          options: ["Direct exfil endpoint", "Could be normal marketing asset", "Confirms Jamie’s role"],
-          correct: 1,
-          hint: "Not every external call is evil."
-        },
-        {
-          context: "MFA pushes x5 within 3 minutes",
-          question: "Likely tactic?",
-          options: ["MFA fatigue after phish", "Hardware failure", "Office party"],
-          correct: 0,
-          hint: "Timing cluster."
-        },
-        {
-          context: "Calendar: 'Lunch — external' (guest masked)\nPrevious 'Website theme help — Jamie R.'",
-          question: "Best conclusion?",
-          options: ["Meeting proves collusion", "Weak signal; needs more evidence", "Lunch equals breach"],
-          correct: 1,
-          hint: "Stay cautious."
-        }
+      correct: 0,
+      hint: "Old IT host suggests device control check."
+    },
+    {
+      context: "Change ticket CHG-2287 closed 'restore job ran'\nApprover: (empty)  Initials: AG",
+      question: "What field helps confirm identity?",
+      options: [
+        "Ticket approver email",
+        "Comment initials mapping", // ✅
+        "Ticket category",
+        "Change priority field",
+        "Associated calendar invite"
       ],
-      // Case 4 tasks
-      [
-        {
-          context: "SIEM: TOR attempts\nTransient 'temp-sync' created & disabled by 'system'",
-          question: "Strongest signal?",
-          options: ["Temp account lifecycle + TOR", "Marketing calendar", "Printer model"],
-          correct: 0,
-          hint: "Process + network together."
-        },
-        {
-          context: "EDR: Encoded PowerShell from w3wp.exe → rundll32",
-          question: "What’s the pivot?",
-          options: ["Parent process chain on APP-SRV-02", "Change printer settings", "Check cafeteria menu"],
-          correct: 0,
-          hint: "Follow the process tree."
-        },
-        {
-          context: "DNS: unknown-realm.biz (domain age <24h, TTL=60s)",
-          question: "Risk rating?",
-          options: ["Suspicious C2-like", "Benign CDN", "Internal intranet"],
-          correct: 0,
-          hint: "Fresh + low TTL."
-        },
-        {
-          context: "FIM: create/delete stage_tmp\\bundle.part03 under 'web-backup'",
-          question: "Why do this?",
-          options: ["Staging chunks for exfil", "Printer cache", "Wi-Fi handshake"],
-          correct: 0,
-          hint: "Bundle parts = staging."
-        },
-        {
-          context: "Asset: WS-IT-04 beaconed for 11s (decommission pending)",
-          question: "Most plausible?",
-          options: ["Attacker touched dormant host to confuse logs", "Alex came back to work", "DNS typo"],
-          correct: 0,
-          hint: "Misdirection tactic."
-        },
-        {
-          context: "Linguistic match to 'doors/air/layers' in temp files",
-          question: "Correct conclusion?",
-          options: ["Style overlap ≠ identity", "Sarah wrote it", "Jamie confessed"],
-          correct: 0,
-          hint: "Correlation ≠ causation."
-        }
-      ]
-    ];
+      correct: 1,
+      hint: "Map initials → person."
+    },
+    {
+      context: "Device control\nHost=WS-IT-04 mounted USB-PHOTO-01 (RO)",
+      question: "Which correlation is most relevant?",
+      options: [
+        "USB label content index",
+        "Mount time vs HR access time", // ✅
+        "Marketing calendar invites",
+        "Jamie’s guest VPN session",
+        "Printer spooler logs"
+      ],
+      correct: 1,
+      hint: "Timeline correlation."
+    },
+    {
+      context: "Mail gateway draft buffer\nText: 'treated / not listened / finally done'\nRouting to mailbox sarah.j failed",
+      question: "Best conclusion?",
+      options: [
+        "Sarah sent the message",
+        "Draft came from IT outbox; routing failed", // ✅
+        "This proves external hacker",
+        "Message originated from Jamie",
+        "Evidence of TOR-based actor"
+      ],
+      correct: 1,
+      hint: "Routing failure ≠ authorship."
+    },
+    {
+      context: "Badge vs VPN mismatch for Alex G.\nTOR exit nodes around same time",
+      question: "Which hypothesis fits best?",
+      options: [
+        "Alex was in the office",
+        "Someone used remote/hidden access", // ✅
+        "It was a printer error",
+        "Sarah logged in via VPN",
+        "Jamie spoofed his badge"
+      ],
+      correct: 1,
+      hint: "No badge entry but VPN activity."
+    }
+  ],
+  // Case 2 tasks
+  [
+    {
+      context: "Firewall IDS: credential stuffing\nUA='Mozilla/5.0'\nAccount lock 'alex.g' at 02:12",
+      question: "Which part is the likely signal?",
+      options: [
+        "Generic UA string",
+        "Burst of login rotations", // ✅
+        "Alex’s lock proves insider",
+        "Sarah’s marketing share access",
+        "Printer queue jobs"
+      ],
+      correct: 1,
+      hint: "Look for patterns, not assumptions."
+    },
+    {
+      context: "Web app log: /admin-old/?panel=site\nHTTP 200 from external IP",
+      question: "Which pivot next?",
+      options: [
+        "referrer:* (empty) + endpoint:/admin-old", // ✅
+        "owner:sarah.j",
+        "device:WS-IT-04",
+        "dns query: novatech-resources.com",
+        "badge entry logs"
+      ],
+      correct: 0,
+      hint: "Old admin endpoint without referrer."
+    },
+    {
+      context: "Guest VPN device: LAPTOP-JR-02\nViewed wiki 'How_to_Reset_Admin_Theme'",
+      question: "What does this suggest?",
+      options: [
+        "Advanced attacker",
+        "Beginner searching basic pages", // ✅
+        "Printer misconfig",
+        "Alex’s insider access",
+        "Sarah’s R&D project"
+      ],
+      correct: 1,
+      hint: "Matches 'script kiddie' behavior."
+    },
+    {
+      context: "Proxy/DNS lookups: brutetool-lite.zip",
+      question: "Good defensive action?",
+      options: [
+        "Blocklist domain and alert", // ✅
+        "Reset all passwords globally",
+        "Disable all printers",
+        "Purge marketing files",
+        "Block Alex’s account permanently"
+      ],
+      correct: 0,
+      hint: "Proportional response."
+    },
+    {
+      context: "CDN upload: admin_dashboard.png from guest VLAN",
+      question: "Why capture a screenshot?",
+      options: [
+        "Brag / Proof of access", // ✅
+        "Printer test",
+        "VPN speed test",
+        "Sarah’s marketing task",
+        "Malware installer validation"
+      ],
+      correct: 0,
+      hint: "Motivation, not function."
+    },
+    {
+      context: "CMS change trace: '/public/notice.tmp' text 'your layers are tissue'",
+      question: "Most accurate interpretation?",
+      options: [
+        "Ransom note confirmed",
+        "Style matches prior 'UNKNOWN_ACTOR' but not proof", // ✅
+        "Sarah wrote it",
+        "Alex’s initials prove involvement",
+        "It’s just printer cache"
+      ],
+      correct: 1,
+      hint: "Correlation isn't attribution."
+    }
+  ],
+  // Case 3 tasks
+  [
+    {
+      context: "Mail gateway: ceo-office@fincorp.co\nSPF/DKIM pass. Link to '/download?file=q4_report.zip'",
+      question: "Best quick check?",
+      options: [
+        "Compare domain lookalike + link redirect path", // ✅
+        "Print the email",
+        "Ask printer logs",
+        "Check Jamie’s calendar",
+        "Assume safe since SPF passed"
+      ],
+      correct: 0,
+      hint: "Lookalike domain & tracking link."
+    },
+    {
+      context: "Share download 'project_blueprints.zip' by sarah.j\nTemp group 'Marketing-Temp' granted",
+      question: "What stands out?",
+      options: [
+        "Large file + new perms right before", // ✅
+        "Printer color setting",
+        "MFA disabled",
+        "Jamie’s VPN use",
+        "Alex’s initials"
+      ],
+      correct: 0,
+      hint: "Sequence matters."
+    },
+    {
+      context: "Print job right after download\nTicket REQ-4419 raised by alex.g (printer access)",
+      question: "Most reasonable read?",
+      options: [
+        "Alex printed blueprints",
+        "Operational request; not proof of theft", // ✅
+        "Printer hacked the share",
+        "Sarah forced Alex",
+        "Evidence of TOR actor"
+      ],
+      correct: 1,
+      hint: "Avoid leaps."
+    },
+    {
+      context: "Proxy: cdn.novatech-resources.com/assets/img/",
+      question: "Which is true?",
+      options: [
+        "Direct exfil endpoint",
+        "Could be normal marketing asset", // ✅
+        "Confirms Jamie’s role",
+        "Printer malware beacon",
+        "Sarah’s NDA memo"
+      ],
+      correct: 1,
+      hint: "Not every external call is evil."
+    },
+    {
+      context: "MFA pushes x5 within 3 minutes",
+      question: "Likely tactic?",
+      options: [
+        "MFA fatigue after phish", // ✅
+        "Hardware failure",
+        "Office party",
+        "Sarah forgot her password",
+        "Jamie brute-forced MFA"
+      ],
+      correct: 0,
+      hint: "Timing cluster."
+    },
+    {
+      context: "Calendar: 'Lunch — external' (guest masked)\nPrevious 'Website theme help — Jamie R.'",
+      question: "Best conclusion?",
+      options: [
+        "Meeting proves collusion",
+        "Weak signal; needs more evidence", // ✅
+        "Lunch equals breach",
+        "Jamie is guilty",
+        "Alex scheduled the lunch"
+      ],
+      correct: 1,
+      hint: "Stay cautious."
+    }
+  ],
+  // Case 4 tasks
+  [
+    {
+      context: "SIEM: TOR attempts\nTransient 'temp-sync' created & disabled by 'system'",
+      question: "Strongest signal?",
+      options: [
+        "Temp account lifecycle + TOR", // ✅
+        "Marketing calendar",
+        "Printer model",
+        "Jamie’s failed VPN",
+        "Alex’s USB logs"
+      ],
+      correct: 0,
+      hint: "Process + network together."
+    },
+    {
+      context: "EDR: Encoded PowerShell from w3wp.exe → rundll32",
+      question: "What’s the pivot?",
+      options: [
+        "Parent process chain on APP-SRV-02", // ✅
+        "Change printer settings",
+        "Check cafeteria menu",
+        "Sarah’s marketing laptop",
+        "Jamie’s Discord screenshot"
+      ],
+      correct: 0,
+      hint: "Follow the process tree."
+    },
+    {
+      context: "DNS: unknown-realm.biz (domain age <24h, TTL=60s)",
+      question: "Risk rating?",
+      options: [
+        "Suspicious C2-like", // ✅
+        "Benign CDN",
+        "Internal intranet",
+        "Alex’s NAS drive",
+        "Sarah’s blog"
+      ],
+      correct: 0,
+      hint: "Fresh + low TTL."
+    },
+    {
+      context: "FIM: create/delete stage_tmp\\bundle.part03 under 'web-backup'",
+      question: "Why do this?",
+      options: [
+        "Staging chunks for exfil", // ✅
+        "Printer cache",
+        "Wi-Fi handshake",
+        "Jamie’s admin prank",
+        "Sarah’s project archive"
+      ],
+      correct: 0,
+      hint: "Bundle parts = staging."
+    },
+    {
+      context: "Asset: WS-IT-04 beaconed for 11s (decommission pending)",
+      question: "Most plausible?",
+      options: [
+        "Attacker touched dormant host to confuse logs", // ✅
+        "Alex came back to work",
+        "DNS typo",
+        "Printer firmware bug",
+        "Sarah’s marketing demo"
+      ],
+      correct: 0,
+      hint: "Misdirection tactic."
+    },
+    {
+      context: "Linguistic match to 'doors/air/layers' in temp files",
+      question: "Correct conclusion?",
+      options: [
+        "Style overlap ≠ identity", // ✅
+        "Sarah wrote it",
+        "Jamie confessed",
+        "Alex’s initials prove it",
+        "Unknown proves guilt"
+      ],
+      correct: 0,
+      hint: "Correlation ≠ causation."
+    }
+  ]
+];
+
 
     /* =========================
        STATE & ELEMENTS
@@ -464,6 +611,10 @@
     function startGame() {
       const randomIndex = Math.floor(Math.random() * cases.length);
       currentCase = cases[randomIndex];
+
+      // shuffle tasks for this case so order changes every gameplay
+      const caseIdx = randomIndex;
+      tasks[caseIdx] = shuffleArray(tasks[caseIdx]);
 
       intro.classList.add("hidden");
       caseSection.classList.remove("hidden");
@@ -728,6 +879,15 @@
       const m = Math.floor(total/60);
       const s = total%60;
       return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    // Fisher-Yates shuffle
+    function shuffleArray(arr){
+      for(let i = arr.length -1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     }
   </script>
 </body>
