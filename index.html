@@ -39,7 +39,7 @@
       <div class="suspect">
         <img src="assets/img/2.png" alt="Jamie R.">
         <h4>Jamie R.</h4>
-        <p>A young student known for bragging about hacking small websites just for fun.</p>
+        <p>A young student known for hacking small websites just for fun.</p>
       </div>
       <div class="suspect">
         <img src="assets/img/3.png" alt="Sarah J.">
@@ -77,7 +77,8 @@
             <option value="sarah">Sarah J.</option>
             <option value="hacker">Unknown (The Shadow)</option>
           </select>
-          <button onclick="accuseSuspect()" style="margin-top: 10px;">Accuse</button>
+          <!-- Accusation is disabled until all conditions are met -->
+          <button id="accuseBtn" onclick="accuseSuspect()" style="margin-top: 10px;" disabled>Accuse</button>
         </div> 
       </div>
     </div>
@@ -118,8 +119,14 @@
     ==========================*/
     const TIMER_MINUTES = 40;            // total time (minutes)
     const INITIAL_UNLOCK = 2;            // clues available at start
-    const UNLOCK_COOLDOWN_SECONDS = 200; // seconds between automatic unlocks
-    const WRONG_PENALTY_SECONDS = 300;    // timer penalty on wrong task answer
+    const UNLOCK_COOLDOWN_SECONDS = 120; // seconds between automatic unlocks
+    const WRONG_PENALTY_SECONDS = 300;   // timer penalty on wrong task answer
+
+    // ---- Accusation gating config ----
+    // Default: must have all 6 clues UNLOCKED to accuse.
+    const REQUIRE_SOLVED_FOR_ACCUSATION = false;
+    // If you'd rather require all 6 clues SOLVED (tasks completed), set to true:
+    // const REQUIRE_SOLVED_FOR_ACCUSATION = true;
 
     /* =========================
        CASES + DEBRIEFS
@@ -160,7 +167,7 @@
         debrief: {
           keyPoints: [
             "Credential stuffing noise matches student patterns (generic UA).",
-            "Guest VPN device 'LAPTOP-JR-02' browsing basic how‑to pages.",
+            "Guest VPN device 'LAPTOP-JR-02' browsing basic how-to pages.",
             "Admin screenshot uploaded to temporary CDN (brag/souvenir)."
           ],
           misdirections: [
@@ -181,7 +188,7 @@
         ],
         debrief: {
           keyPoints: [
-            "Convincing look‑alike email triggers link and immediate large download.",
+            "Convincing look-alike email triggers link and immediate large download.",
             "Temporary permissions + printer use right after download.",
             "MFA fatigue pattern aligns with phish timing."
           ],
@@ -209,7 +216,7 @@
           ],
           misdirections: [
             "Phrasing overlaps with unrelated internal incidents (style collision).",
-            "WS‑IT‑04 beacon could be a planted distraction referencing Alex."
+            "WS-IT-04 beacon could be a planted distraction referencing Alex."
           ]
         }
       }
@@ -217,7 +224,6 @@
 
     /* =========================
        FORENSIC TASKS (one per clue)
-       Believable, short, and tied to the clue.
     ==========================*/
     const tasks = [
       // Case 1 tasks (6)
@@ -381,7 +387,7 @@
         {
           context: "FIM: create/delete stage_tmp\\bundle.part03 under 'web-backup'",
           question: "Why do this?",
-          options: ["Staging chunks for exfil", "Printer cache", "Wi‑Fi handshake"],
+          options: ["Staging chunks for exfil", "Printer cache", "Wi-Fi handshake"],
           correct: 0,
           hint: "Bundle parts = staging."
         },
@@ -440,6 +446,21 @@
 
     document.getElementById("startBtn").addEventListener("click", startGame);
 
+    /* ====== Accusation gating helpers ====== */
+    function canAccuse() {
+      if (REQUIRE_SOLVED_FOR_ACCUSATION) return solved.every(Boolean);
+      return unlockedCount >= 6;
+    }
+    function updateAccuseAvailability() {
+      const btn = document.getElementById('accuseBtn');
+      if (!btn) return;
+      const ready = canAccuse();
+      btn.disabled = !ready;
+      btn.title = ready ? 'You can accuse a suspect' : (REQUIRE_SOLVED_FOR_ACCUSATION ? 'Solve all 6 clues before accusing' : 'Unlock all 6 clues before accusing');
+      btn.style.opacity = ready ? '1' : '0.6';
+      btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    }
+
     function startGame() {
       const randomIndex = Math.floor(Math.random() * cases.length);
       currentCase = cases[randomIndex];
@@ -468,6 +489,7 @@
       unlockedCount = 0;
       for(let i=0;i<INITIAL_UNLOCK;i++){ unlockNextClue(); }
       clueProgress.textContent = unlockedCount.toString();
+      updateAccuseAvailability();
 
       // timer setup
       totalSeconds = TIMER_MINUTES * 60;
@@ -479,14 +501,11 @@
 
     function handleClueClick(btn, index){
       if (btn.classList.contains("locked")) return;
-      // If already solved, just show clue
       if (solved[index]) { showClue(index); return; }
-      // else open task for this clue
       openTask(index);
     }
 
-
-    //Helper function
+    // Try Again helper
     function tryAgain() {
       document.getElementById("modal").style.display = "none";
       const tm = document.getElementById("taskModal");
@@ -533,6 +552,7 @@
       locked.classList.remove("locked");
       locked.classList.add("unlocked");
       unlockedCount++;
+      updateAccuseAvailability();
     }
 
     function lockAllClues(){
@@ -576,6 +596,7 @@
         taskModal.style.display = "none";
         if (hintTimer) clearTimeout(hintTimer);
         showClue(workingClue);
+        updateAccuseAvailability();
       } else {
         totalSeconds = Math.max(0, totalSeconds - WRONG_PENALTY_SECONDS);
         taskHint.textContent = `❌ Not quite. ${WRONG_PENALTY_SECONDS}s penalty applied.`;
@@ -606,16 +627,23 @@
       clueProgress.textContent = "0";
       unlockBadge.textContent = "Next clue in: --";
       taskModal.style.display = "none";
+      updateAccuseAvailability();
     }
 
     /* ====== ACCUSATION ====== */
     function accuseSuspect() {
+      if (!canAccuse()) {
+        alert(REQUIRE_SOLVED_FOR_ACCUSATION
+          ? "You must solve all 6 clues before making an accusation."
+          : "You must unlock all 6 clues before making an accusation."
+        );
+        return;
+      }
       const select = document.getElementById("suspectSelect");
       const value = select.value;
       if (!value) return;
       selectedSuspect = value;
-      // show preview card immediately
-      renderAccusedCard(value);
+      renderAccusedCard(value); // preview card immediately
       document.getElementById("confirmModal").style.display = "block";
     }
     function cancelAccusation() {
