@@ -60,9 +60,11 @@
   <!-- Case Display -->
   <div id="case" class="hidden">
     <div class="clues-container" id="clueButtons"></div>
-    <div class="helper" id="unlockHelper">Clues unlock over time and require analyst actions to view. Work as a team.</div>
+    <div class="helper" id="unlockHelper"></div>
 
     <button id="back-btn" onclick="goBack()">🔙 End Investigation</button>
+    <!-- Shown once the case is closed, to reopen the result/debrief -->
+    <button id="resultBtn" onclick="showResult()" style="display:none;">📋 Show result</button>
 
     <hr style="margin-top: 40px; width: 100%; border-color: #00ffff30" />
     <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px;">
@@ -71,7 +73,7 @@
         <div id="accusedVisual" class="hidden" style="text-align: center;"></div>
         <div>
           <select id="suspectSelect" style="padding: 8px; border-radius: 6px;" onchange="previewSuspect()">
-            <option disabled selected>Choose a suspect</option>
+            <option value="" disabled selected>Choose a suspect</option>
             <option value="alex">Alex G.</option>
             <option value="jamie">Jamie R.</option>
             <option value="sarah">Sarah J.</option>
@@ -121,12 +123,22 @@
     const INITIAL_UNLOCK = 2;            // clues available at start
     const UNLOCK_COOLDOWN_SECONDS = 120; // seconds between automatic unlocks
     const WRONG_PENALTY_SECONDS = 300;   // timer penalty on wrong task answer
+    const HINT_DELAY_SECONDS = 60;       // hint shows after this long (or right after a wrong answer)
+    const TOTAL_CLUES = 6;               // clues per case
 
     // ---- Accusation gating config ----
-    // Default: must have all 6 clues UNLOCKED to accuse.
-    const REQUIRE_SOLVED_FOR_ACCUSATION = false;
-    // If you'd rather require all 6 clues SOLVED (tasks completed), set to true:
-    // const REQUIRE_SOLVED_FOR_ACCUSATION = true;
+    // true  = all 6 clues must be SOLVED (analyst tasks completed) before accusing.
+    // false = all 6 clues only need to be UNLOCKED (teams can then accuse without reading them).
+    const REQUIRE_SOLVED_FOR_ACCUSATION = true;
+
+    // ---- Scoring (awarded only on a correct accusation) ----
+    const SCORE_BASE = 10000;            // for accusing the right suspect
+    const SCORE_FIRST_TRY_BONUS = 500;   // per clue whose task was answered right first time
+    const SCORE_PER_SECOND_LEFT = 2;     // small speed bonus
+
+    // ---- Facilitator option ----
+    // Add ?case=1 (or 2, 3, 4) to the page URL to force a specific case,
+    // e.g. so every team in a workshop plays the same one.
 
     /* =========================
        CASES + DEBRIEFS
@@ -177,24 +189,27 @@
         }
       },
       {
+        // Rewritten: the evidence now shows Sarah acting deliberately
+        // (the earlier version described her being phished, which made her a victim).
         title: "Case 3: The Competitor",
         clues: [
-          "📨 Secure Mail Gateway:\n11:02 — Message to 'sarah.j' from 'ceo-office@fincorp.co' passed SPF/DKIM. Link to '/download?file=q4_report.zip'.",
-          "📦 Share Storage Audit:\n11:07 — Download 'project_blueprints.zip' (842 MB) by user 'sarah.j' from '\\\\design-share\\R&D'. Permission grant to 'Marketing-Temp' just before.",
-          "🖨️ Print Server Queue:\n11:12 — Job 'Blueprints_A3_Color' from 'MARKETING-LAPTOP-07'. Ticket REQ-4419 raised by 'alex.g' requested temp printer access prior day.",
-          "🌐 DNS/Proxy Logs:\n11:20 — Outbound to 'cdn.novatech-resources.com/assets/img/' from 'MARKETING-LAPTOP-07'.",
-          "🔒 MFA Timeline:\n11:03–11:06 — 5 MFA push approvals for 'sarah.j' from same device. Tight cluster suggests phish + fatigue.",
-          "📅 Calendar Audit:\n'Lunch — external' by 'sarah.j' Tue/Thu (guest masked). Previous 'Website theme help — Jamie R.' last week."
+          "📨 Secure Mail Gateway:\n11:02 — Message to 'sarah.j' from a look-alike of the CEO office address (domain registered 3 days earlier). Verdict: QUARANTINED before delivery; link never clicked. Same message sent to 14 other staff. Campaign tagged 'UNKNOWN_ACTOR'.",
+          "📦 Share Storage Audit:\n11:07 — Download 'project_blueprints.zip' (842 MB) by user 'sarah.j' from '\\\\design-share\\R&D'. Access came through group 'Marketing-Temp', which 'sarah.j' requested for herself the day before (reason given: 'campaign visuals').",
+          "🖨️ Print Server Queue:\n11:12 — Job 'Blueprints_A3_Color' (38 pages) from 'MARKETING-LAPTOP-07'. Printer access for that laptop was set up under ticket REQ-4419, handled by 'alex.g' before he left.",
+          "🌐 DNS/Proxy Logs:\n11:20–11:36 — 'MARKETING-LAPTOP-07' uploaded 840 MB to a personal cloud storage account (not the company tenant). Browser session signed in with a private email address.",
+          "🔒 MFA Timeline:\n11:03 — One MFA prompt for 'sarah.j', approved on the first push from her enrolled phone. No repeated prompts, no new device, no password reset. Badge log: 'sarah.j' entered the Marketing floor at 10:48.",
+          "📅 Calendar Audit:\n'Lunch — external' by 'sarah.j' Tue/Thu, guest name masked; guest email domain is 'novatech-resources.com' (a direct competitor). Also last week: 'Website theme help — Jamie R.'"
         ],
         debrief: {
           keyPoints: [
-            "Convincing look-alike email triggers link and immediate large download.",
-            "Temporary permissions + printer use right after download.",
-            "MFA fatigue pattern aligns with phish timing."
+            "Sarah requested R&D access for herself the day before, then downloaded 842 MB of blueprints.",
+            "One clean MFA approval from her own phone while badged in: no sign of account takeover.",
+            "The files left via a personal cloud account, and her recurring 'external lunches' were with a competitor."
           ],
           misdirections: [
-            "Alex’s ticket about printers (operational, not access to R&D shares).",
-            "Jamie’s calendar mention (website theme, unrelated to R&D data)."
+            "The look-alike CEO email was quarantined and never clicked (unrelated campaign).",
+            "Alex's name on the printer ticket (routine setup, no access to R&D shares).",
+            "Jamie's calendar mention (website theme, unrelated to R&D data)."
           ]
         }
       },
@@ -222,351 +237,358 @@
       }
     ];
 
-    
     /* =========================
-   FORENSIC TASKS (one per clue)
-   With 4–5 answer options each
-  ==========================*/
-  const tasks = [
-  // Case 1 tasks (6)
-  [
-    {
-      context: "SIEM (auth events)\n02:31–02:42 many FAIL for user=jamie.r\n02:43:12 SUCCESS vpn user=svc-ops-archive",
-      question: "Which filter best isolates the suspicious success?",
-      options: [
-        "event:auth AND user:jamie.r AND result:success",
-        "event:auth AND user:svc-ops-archive AND result:success", // ✅
-        "vpn AND user:alex.g AND result:any",
-        "event:auth AND user:sarah.j AND result:fail",
-        "event:auth AND ip:192.168.1.12"
+       FORENSIC TASKS (one per clue, same order as the clues above)
+       `correct` is the index of the right option in the list below.
+       Options are shuffled on screen, so position gives nothing away.
+    ==========================*/
+    const tasks = [
+      // Case 1 tasks (6)
+      [
+        {
+          context: "SIEM (auth events)\n02:31–02:42 many FAIL for user=jamie.r\n02:43:12 SUCCESS vpn user=svc-ops-archive",
+          question: "Which filter best isolates the suspicious success?",
+          options: [
+            "event:auth AND user:jamie.r AND result:success",
+            "event:auth AND user:svc-ops-archive AND result:success", // ✅
+            "vpn AND user:alex.g AND result:any",
+            "event:auth AND user:sarah.j AND result:fail",
+            "event:auth AND ip:192.168.1.12"
+          ],
+          correct: 1,
+          hint: "Service account + success at 02:43."
+        },
+        {
+          context: "File share access paths\n//corp-share/HR/Offboarding/Policies_Archive.pdf\nHost=WS-IT-04",
+          question: "What pivot would you run next?",
+          options: [
+            "host:WS-IT-04 AND device:usb", // ✅
+            "user:jamie.r AND path:R&D",
+            "dns:novatech-resources.com",
+            "host:MARKETING-LAPTOP-07 AND printer:jobs",
+            "ip:10.0.0.55"
+          ],
+          correct: 0,
+          hint: "Old IT host suggests device control check."
+        },
+        {
+          context: "Change ticket CHG-2287 closed 'restore job ran'\nApprover: (empty)  Initials: AG",
+          question: "What field helps confirm identity?",
+          options: [
+            "Ticket approver email",
+            "Comment initials mapping", // ✅
+            "Ticket category",
+            "Change priority field",
+            "Associated calendar invite"
+          ],
+          correct: 1,
+          hint: "Map initials → person."
+        },
+        {
+          context: "Device control\nHost=WS-IT-04 mounted USB-PHOTO-01 (RO)",
+          question: "Which correlation is most relevant?",
+          options: [
+            "USB label content index",
+            "Mount time vs HR access time", // ✅
+            "Marketing calendar invites",
+            "Jamie’s guest VPN session",
+            "USB drive brand and model"
+          ],
+          correct: 1,
+          hint: "Timeline correlation."
+        },
+        {
+          context: "Mail gateway draft buffer\nText: 'treated / not listened / finally done'\nRouting to mailbox sarah.j failed",
+          question: "Best conclusion?",
+          options: [
+            "Sarah sent the message",
+            "Draft came from IT outbox; routing failed", // ✅
+            "This proves external hacker",
+            "Message originated from Jamie",
+            "Evidence of TOR-based actor"
+          ],
+          correct: 1,
+          hint: "Routing failure ≠ authorship."
+        },
+        {
+          context: "Badge vs VPN mismatch for Alex G.\nTOR exit nodes around same time",
+          question: "Which hypothesis fits best?",
+          options: [
+            "Alex was in the office",
+            "Someone used remote/hidden access", // ✅
+            "The badge reader failed to log him",
+            "Sarah logged in via VPN",
+            "Jamie spoofed his badge"
+          ],
+          correct: 1,
+          hint: "No badge entry but VPN activity."
+        }
       ],
-      correct: 1,
-      hint: "Service account + success at 02:43."
-    },
-    {
-      context: "File share access paths\n//corp-share/HR/Offboarding/Policies_Archive.pdf\nHost=WS-IT-04",
-      question: "What pivot would you run next?",
-      options: [
-        "host:WS-IT-04 AND device:usb", // ✅
-        "user:jamie.r AND path:R&D",
-        "dns:novatech-resources.com",
-        "host:MARKETING-LAPTOP-07 AND printer:jobs",
-        "ip:10.0.0.55"
+      // Case 2 tasks
+      [
+        {
+          context: "Firewall IDS: credential stuffing\nUA='Mozilla/5.0'\nAccount lock 'alex.g' at 02:12",
+          question: "Which part is the likely signal?",
+          options: [
+            "Generic UA string",
+            "Burst of login rotations", // ✅
+            "Alex’s lock proves insider",
+            "Sarah’s marketing share access",
+            "The /auth endpoint being reachable"
+          ],
+          correct: 1,
+          hint: "Look for patterns, not assumptions."
+        },
+        {
+          context: "Web app log: /admin-old/?panel=site\nHTTP 200 from external IP",
+          question: "Which pivot next?",
+          options: [
+            "referrer:* (empty) + endpoint:/admin-old", // ✅
+            "owner:sarah.j",
+            "device:WS-IT-04",
+            "dns query: novatech-resources.com",
+            "badge entry logs"
+          ],
+          correct: 0,
+          hint: "Old admin endpoint without referrer."
+        },
+        {
+          context: "Guest VPN device: LAPTOP-JR-02\nViewed wiki 'How_to_Reset_Admin_Theme'",
+          question: "What does this suggest?",
+          options: [
+            "Advanced attacker",
+            "Beginner searching basic pages", // ✅
+            "Automated vulnerability scanner",
+            "Alex’s insider access",
+            "Sarah’s R&D project"
+          ],
+          correct: 1,
+          hint: "Matches 'script kiddie' behavior."
+        },
+        {
+          context: "Proxy/DNS lookups: brutetool-lite.zip",
+          question: "Good defensive action?",
+          options: [
+            "Blocklist domain and alert", // ✅
+            "Reset all passwords globally",
+            "Take the whole website offline",
+            "Ignore it: lookups are not downloads",
+            "Block Alex’s account permanently"
+          ],
+          correct: 0,
+          hint: "Proportional response."
+        },
+        {
+          context: "CDN upload: admin_dashboard.png from guest VLAN",
+          question: "Why capture a screenshot?",
+          options: [
+            "Brag / Proof of access", // ✅
+            "Documenting a bug for IT",
+            "Backing up the site configuration",
+            "Sarah’s marketing task",
+            "Malware installer validation"
+          ],
+          correct: 0,
+          hint: "Motivation, not function."
+        },
+        {
+          context: "CMS change trace: '/public/notice.tmp' text 'your layers are tissue'",
+          question: "Most accurate interpretation?",
+          options: [
+            "Ransom note confirmed",
+            "Style matches prior 'UNKNOWN_ACTOR' but not proof", // ✅
+            "Sarah wrote it",
+            "Alex’s initials prove involvement",
+            "It’s a leftover CMS cache file"
+          ],
+          correct: 1,
+          hint: "Correlation isn't attribution."
+        }
       ],
-      correct: 0,
-      hint: "Old IT host suggests device control check."
-    },
-    {
-      context: "Change ticket CHG-2287 closed 'restore job ran'\nApprover: (empty)  Initials: AG",
-      question: "What field helps confirm identity?",
-      options: [
-        "Ticket approver email",
-        "Comment initials mapping", // ✅
-        "Ticket category",
-        "Change priority field",
-        "Associated calendar invite"
+      // Case 3 tasks (rewritten to match the new clues)
+      [
+        {
+          context: "Mail gateway: look-alike of CEO office address → sarah.j\nVerdict: QUARANTINED, link never clicked\nSame mail sent to 14 other staff",
+          question: "What does this tell you?",
+          options: [
+            "The phish never reached her, so it can't explain the download", // ✅
+            "Sarah was phished and her account taken over",
+            "The CEO office sent a genuine request",
+            "A quarantined email proves an outsider did it",
+            "All 15 recipients are equally suspect"
+          ],
+          correct: 0,
+          hint: "Quarantined = never delivered."
+        },
+        {
+          context: "Share download 'project_blueprints.zip' (842 MB) by sarah.j\nGroup 'Marketing-Temp' requested by sarah.j the day before",
+          question: "What stands out?",
+          options: [
+            "Self-requested access one day before a large R&D download", // ✅
+            "The file size alone proves theft",
+            "The group name shows IT granted it by mistake",
+            "Any download from an R&D share is malicious",
+            "Nothing: marketing needs visuals"
+          ],
+          correct: 0,
+          hint: "Sequence matters: request, then download."
+        },
+        {
+          context: "Print job 'Blueprints_A3_Color' right after the download\nPrinter access set up under REQ-4419, handled by alex.g",
+          question: "Most reasonable read?",
+          options: [
+            "Alex printed the blueprints",
+            "Routine ticket handling; not proof against Alex", // ✅
+            "Alex granted the R&D access",
+            "The ticket was forged by an outsider",
+            "A print job means nothing left the building digitally"
+          ],
+          correct: 1,
+          hint: "Who handled a ticket ≠ who used the printer."
+        },
+        {
+          context: "Proxy: 840 MB upload from MARKETING-LAPTOP-07\nDestination: personal cloud storage, private email login",
+          question: "Best next check?",
+          options: [
+            "Compare upload size and time with the share download", // ✅
+            "Block all cloud storage company-wide",
+            "Search for TOR exit nodes",
+            "Review Jamie’s guest VPN sessions",
+            "Treat it as a personal backup and close it"
+          ],
+          correct: 0,
+          hint: "842 MB down, 840 MB up, minutes apart."
+        },
+        {
+          context: "MFA: one prompt, approved on first push from enrolled phone\nNo new device, no password reset\nBadge-in at 10:48",
+          question: "What does this pattern indicate?",
+          options: [
+            "The legitimate user signed in herself", // ✅
+            "MFA fatigue attack",
+            "Stolen session cookie",
+            "SIM swap by an outsider",
+            "Password shared with a colleague"
+          ],
+          correct: 0,
+          hint: "One clean approval, own phone, on site."
+        },
+        {
+          context: "Calendar: 'Lunch — external' Tue/Thu, guest domain novatech-resources.com (competitor)\nPrevious 'Website theme help — Jamie R.'",
+          question: "Best conclusion?",
+          options: [
+            "The lunches alone prove the theft",
+            "Recurring competitor contact: a motive to weigh with the logs", // ✅
+            "Jamie is guilty",
+            "Calendar entries are never evidence",
+            "Alex scheduled the lunches"
+          ],
+          correct: 1,
+          hint: "Context, not proof: combine it with the logs."
+        }
       ],
-      correct: 1,
-      hint: "Map initials → person."
-    },
-    {
-      context: "Device control\nHost=WS-IT-04 mounted USB-PHOTO-01 (RO)",
-      question: "Which correlation is most relevant?",
-      options: [
-        "USB label content index",
-        "Mount time vs HR access time", // ✅
-        "Marketing calendar invites",
-        "Jamie’s guest VPN session",
-        "Printer spooler logs"
-      ],
-      correct: 1,
-      hint: "Timeline correlation."
-    },
-    {
-      context: "Mail gateway draft buffer\nText: 'treated / not listened / finally done'\nRouting to mailbox sarah.j failed",
-      question: "Best conclusion?",
-      options: [
-        "Sarah sent the message",
-        "Draft came from IT outbox; routing failed", // ✅
-        "This proves external hacker",
-        "Message originated from Jamie",
-        "Evidence of TOR-based actor"
-      ],
-      correct: 1,
-      hint: "Routing failure ≠ authorship."
-    },
-    {
-      context: "Badge vs VPN mismatch for Alex G.\nTOR exit nodes around same time",
-      question: "Which hypothesis fits best?",
-      options: [
-        "Alex was in the office",
-        "Someone used remote/hidden access", // ✅
-        "It was a printer error",
-        "Sarah logged in via VPN",
-        "Jamie spoofed his badge"
-      ],
-      correct: 1,
-      hint: "No badge entry but VPN activity."
-    }
-  ],
-  // Case 2 tasks
-  [
-    {
-      context: "Firewall IDS: credential stuffing\nUA='Mozilla/5.0'\nAccount lock 'alex.g' at 02:12",
-      question: "Which part is the likely signal?",
-      options: [
-        "Generic UA string",
-        "Burst of login rotations", // ✅
-        "Alex’s lock proves insider",
-        "Sarah’s marketing share access",
-        "Printer queue jobs"
-      ],
-      correct: 1,
-      hint: "Look for patterns, not assumptions."
-    },
-    {
-      context: "Web app log: /admin-old/?panel=site\nHTTP 200 from external IP",
-      question: "Which pivot next?",
-      options: [
-        "referrer:* (empty) + endpoint:/admin-old", // ✅
-        "owner:sarah.j",
-        "device:WS-IT-04",
-        "dns query: novatech-resources.com",
-        "badge entry logs"
-      ],
-      correct: 0,
-      hint: "Old admin endpoint without referrer."
-    },
-    {
-      context: "Guest VPN device: LAPTOP-JR-02\nViewed wiki 'How_to_Reset_Admin_Theme'",
-      question: "What does this suggest?",
-      options: [
-        "Advanced attacker",
-        "Beginner searching basic pages", // ✅
-        "Printer misconfig",
-        "Alex’s insider access",
-        "Sarah’s R&D project"
-      ],
-      correct: 1,
-      hint: "Matches 'script kiddie' behavior."
-    },
-    {
-      context: "Proxy/DNS lookups: brutetool-lite.zip",
-      question: "Good defensive action?",
-      options: [
-        "Blocklist domain and alert", // ✅
-        "Reset all passwords globally",
-        "Disable all printers",
-        "Purge marketing files",
-        "Block Alex’s account permanently"
-      ],
-      correct: 0,
-      hint: "Proportional response."
-    },
-    {
-      context: "CDN upload: admin_dashboard.png from guest VLAN",
-      question: "Why capture a screenshot?",
-      options: [
-        "Brag / Proof of access", // ✅
-        "Printer test",
-        "VPN speed test",
-        "Sarah’s marketing task",
-        "Malware installer validation"
-      ],
-      correct: 0,
-      hint: "Motivation, not function."
-    },
-    {
-      context: "CMS change trace: '/public/notice.tmp' text 'your layers are tissue'",
-      question: "Most accurate interpretation?",
-      options: [
-        "Ransom note confirmed",
-        "Style matches prior 'UNKNOWN_ACTOR' but not proof", // ✅
-        "Sarah wrote it",
-        "Alex’s initials prove involvement",
-        "It’s just printer cache"
-      ],
-      correct: 1,
-      hint: "Correlation isn't attribution."
-    }
-  ],
-  // Case 3 tasks
-  [
-    {
-      context: "Mail gateway: ceo-office@fincorp.co\nSPF/DKIM pass. Link to '/download?file=q4_report.zip'",
-      question: "Best quick check?",
-      options: [
-        "Compare domain lookalike + link redirect path", // ✅
-        "Print the email",
-        "Ask printer logs",
-        "Check Jamie’s calendar",
-        "Assume safe since SPF passed"
-      ],
-      correct: 0,
-      hint: "Lookalike domain & tracking link."
-    },
-    {
-      context: "Share download 'project_blueprints.zip' by sarah.j\nTemp group 'Marketing-Temp' granted",
-      question: "What stands out?",
-      options: [
-        "Large file + new perms right before", // ✅
-        "Printer color setting",
-        "MFA disabled",
-        "Jamie’s VPN use",
-        "Alex’s initials"
-      ],
-      correct: 0,
-      hint: "Sequence matters."
-    },
-    {
-      context: "Print job right after download\nTicket REQ-4419 raised by alex.g (printer access)",
-      question: "Most reasonable read?",
-      options: [
-        "Alex printed blueprints",
-        "Operational request; not proof of theft", // ✅
-        "Printer hacked the share",
-        "Sarah forced Alex",
-        "Evidence of TOR actor"
-      ],
-      correct: 1,
-      hint: "Avoid leaps."
-    },
-    {
-      context: "Proxy: cdn.novatech-resources.com/assets/img/",
-      question: "Which is true?",
-      options: [
-        "Direct exfil endpoint",
-        "Could be normal marketing asset", // ✅
-        "Confirms Jamie’s role",
-        "Printer malware beacon",
-        "Sarah’s NDA memo"
-      ],
-      correct: 1,
-      hint: "Not every external call is evil."
-    },
-    {
-      context: "MFA pushes x5 within 3 minutes",
-      question: "Likely tactic?",
-      options: [
-        "MFA fatigue after phish", // ✅
-        "Hardware failure",
-        "Office party",
-        "Sarah forgot her password",
-        "Jamie brute-forced MFA"
-      ],
-      correct: 0,
-      hint: "Timing cluster."
-    },
-    {
-      context: "Calendar: 'Lunch — external' (guest masked)\nPrevious 'Website theme help — Jamie R.'",
-      question: "Best conclusion?",
-      options: [
-        "Meeting proves collusion",
-        "Weak signal; needs more evidence", // ✅
-        "Lunch equals breach",
-        "Jamie is guilty",
-        "Alex scheduled the lunch"
-      ],
-      correct: 1,
-      hint: "Stay cautious."
-    }
-  ],
-  // Case 4 tasks
-  [
-    {
-      context: "SIEM: TOR attempts\nTransient 'temp-sync' created & disabled by 'system'",
-      question: "Strongest signal?",
-      options: [
-        "Temp account lifecycle + TOR", // ✅
-        "Marketing calendar",
-        "Printer model",
-        "Jamie’s failed VPN",
-        "Alex’s USB logs"
-      ],
-      correct: 0,
-      hint: "Process + network together."
-    },
-    {
-      context: "EDR: Encoded PowerShell from w3wp.exe → rundll32",
-      question: "What’s the pivot?",
-      options: [
-        "Parent process chain on APP-SRV-02", // ✅
-        "Change printer settings",
-        "Check cafeteria menu",
-        "Sarah’s marketing laptop",
-        "Jamie’s Discord screenshot"
-      ],
-      correct: 0,
-      hint: "Follow the process tree."
-    },
-    {
-      context: "DNS: unknown-realm.biz (domain age <24h, TTL=60s)",
-      question: "Risk rating?",
-      options: [
-        "Suspicious C2-like", // ✅
-        "Benign CDN",
-        "Internal intranet",
-        "Alex’s NAS drive",
-        "Sarah’s blog"
-      ],
-      correct: 0,
-      hint: "Fresh + low TTL."
-    },
-    {
-      context: "FIM: create/delete stage_tmp\\bundle.part03 under 'web-backup'",
-      question: "Why do this?",
-      options: [
-        "Staging chunks for exfil", // ✅
-        "Printer cache",
-        "Wi-Fi handshake",
-        "Jamie’s admin prank",
-        "Sarah’s project archive"
-      ],
-      correct: 0,
-      hint: "Bundle parts = staging."
-    },
-    {
-      context: "Asset: WS-IT-04 beaconed for 11s (decommission pending)",
-      question: "Most plausible?",
-      options: [
-        "Attacker touched dormant host to confuse logs", // ✅
-        "Alex came back to work",
-        "DNS typo",
-        "Printer firmware bug",
-        "Sarah’s marketing demo"
-      ],
-      correct: 0,
-      hint: "Misdirection tactic."
-    },
-    {
-      context: "Linguistic match to 'doors/air/layers' in temp files",
-      question: "Correct conclusion?",
-      options: [
-        "Style overlap ≠ identity", // ✅
-        "Sarah wrote it",
-        "Jamie confessed",
-        "Alex’s initials prove it",
-        "Unknown proves guilt"
-      ],
-      correct: 0,
-      hint: "Correlation ≠ causation."
-    }
-  ]
-];
-
+      // Case 4 tasks
+      [
+        {
+          context: "SIEM: TOR attempts\nTransient 'temp-sync' created & disabled by 'system'",
+          question: "Strongest signal?",
+          options: [
+            "Temp account lifecycle + TOR", // ✅
+            "Marketing calendar",
+            "The time of day alone",
+            "Jamie’s failed VPN",
+            "Alex’s USB logs"
+          ],
+          correct: 0,
+          hint: "Process + network together."
+        },
+        {
+          context: "EDR: Encoded PowerShell from w3wp.exe → rundll32",
+          question: "What’s the pivot?",
+          options: [
+            "Parent process chain on APP-SRV-02", // ✅
+            "Reboot APP-SRV-02 immediately",
+            "Search mailboxes for the encoded string",
+            "Sarah’s marketing laptop",
+            "Jamie’s guest VPN history"
+          ],
+          correct: 0,
+          hint: "Follow the process tree."
+        },
+        {
+          context: "DNS: unknown-realm.biz (domain age <24h, TTL=60s)",
+          question: "Risk rating?",
+          options: [
+            "Suspicious C2-like", // ✅
+            "Benign CDN",
+            "Internal intranet",
+            "Typo of a legitimate site",
+            "Newly launched marketing site"
+          ],
+          correct: 0,
+          hint: "Fresh + low TTL."
+        },
+        {
+          context: "FIM: create/delete stage_tmp\\bundle.part03 under 'web-backup'",
+          question: "Why do this?",
+          options: [
+            "Staging chunks for exfil", // ✅
+            "Normal backup rotation",
+            "Antivirus quarantine activity",
+            "Jamie’s admin prank",
+            "Sarah’s project archive"
+          ],
+          correct: 0,
+          hint: "Bundle parts = staging."
+        },
+        {
+          context: "Asset: WS-IT-04 beaconed for 11s (decommission pending)",
+          question: "Most plausible?",
+          options: [
+            "Attacker touched dormant host to confuse logs", // ✅
+            "Alex came back to work",
+            "Scheduled patch check-in",
+            "Inventory tool glitch",
+            "Proof that Alex is The Shadow"
+          ],
+          correct: 0,
+          hint: "Misdirection tactic."
+        },
+        {
+          context: "Linguistic match to 'doors/air/layers' in temp files",
+          question: "Correct conclusion?",
+          options: [
+            "Style overlap ≠ identity", // ✅
+            "Sarah wrote it",
+            "Jamie wrote all of them",
+            "Alex’s initials prove it",
+            "The phrases amount to a signed confession"
+          ],
+          correct: 0,
+          hint: "Correlation ≠ causation."
+        }
+      ]
+    ];
 
     /* =========================
        STATE & ELEMENTS
     ==========================*/
     let currentCase = null;
+    let currentCaseIndex = -1;
+    let clueOrder = [];       // clueOrder[buttonIndex] = index into the case's clues/tasks
     let selectedSuspect = null;
     let totalSeconds = 0;
     let timerId = null;
     let cooldown = 0;
     let unlockedCount = 0;
-    let solved = [];          // per clue index: true if clue task completed
-    let workingClue = null;   // index of clue being attempted
+    let solved = [];          // per clue button: true if clue task completed
+    let missed = [];          // per clue button: true if a wrong answer was given
+    let workingClue = null;   // button index of clue being attempted
     let hintTimer = null;
+    let gameOver = false;     // true once accused (right or wrong) or time is up
+    let modalIsResult = false;// true while the modal shows the end-of-case result
+    let resultHtml = "";
+    let caseDeck = [];        // shuffled case order, so cases don't repeat until all are played
+    let lastCaseIndex = -1;
 
     const intro = document.getElementById("intro");
     const caseSection = document.getElementById("case");
@@ -576,12 +598,22 @@
     const globalTimer = document.getElementById("globalTimer");
     const clueProgress = document.getElementById("clueProgress");
     const unlockBadge  = document.getElementById("unlockBadge");
+    const unlockHelper = document.getElementById("unlockHelper");
+    const resultBtn = document.getElementById("resultBtn");
+    const suspectSelect = document.getElementById("suspectSelect");
+    const accusedVisual = document.getElementById("accusedVisual");
+    const confirmModal = document.getElementById("confirmModal");
 
     const taskModal = document.getElementById("taskModal");
     const taskContext = document.getElementById("taskContext");
     const taskQuestion = document.getElementById("taskQuestion");
     const taskOptions = document.getElementById("taskOptions");
     const taskHint = document.getElementById("taskHint");
+
+    const HELPER_DEFAULT = REQUIRE_SOLVED_FOR_ACCUSATION
+      ? "Clues unlock over time. Answer the analyst question to open each one; all 6 must be solved before you can accuse. Work as a team."
+      : "Clues unlock over time and require analyst actions to view. Work as a team.";
+    unlockHelper.textContent = HELPER_DEFAULT;
 
     // Ground truth mapping
     const correctSuspect = {
@@ -591,39 +623,76 @@
       "Case 4: The Shadow Hacker": "hacker"
     };
 
+    const suspectsData = {
+      alex:   { name: "Alex G.", img: "1.png",      desc: "A former IT technician recently let go after a heated argument." },
+      jamie:  { name: "Jamie R.", img: "2.png",     desc: "A young student known for hacking small websites just for fun." },
+      sarah:  { name: "Sarah J.", img: "3.png",     desc: "A respected marketing manager... with unexplained meetings." },
+      hacker: { name: "Unknown (The Shadow)", img: "hacker.png", desc: "No records. No identity. Just traces left in the system..." }
+    };
+
     document.getElementById("startBtn").addEventListener("click", startGame);
 
     /* ====== Accusation gating helpers ====== */
     function canAccuse() {
-      if (REQUIRE_SOLVED_FOR_ACCUSATION) return solved.every(Boolean);
-      return unlockedCount >= 6;
+      if (!currentCase || gameOver) return false;
+      if (REQUIRE_SOLVED_FOR_ACCUSATION) return solved.length === TOTAL_CLUES && solved.every(Boolean);
+      return unlockedCount >= TOTAL_CLUES;
     }
     function updateAccuseAvailability() {
       const btn = document.getElementById('accuseBtn');
       if (!btn) return;
       const ready = canAccuse();
       btn.disabled = !ready;
-      btn.title = ready ? 'You can accuse a suspect' : (REQUIRE_SOLVED_FOR_ACCUSATION ? 'Solve all 6 clues before accusing' : 'Unlock all 6 clues before accusing');
+      btn.title = ready
+        ? 'You can accuse a suspect'
+        : (gameOver ? 'This case is closed'
+          : (REQUIRE_SOLVED_FOR_ACCUSATION ? 'Solve all 6 clues before accusing' : 'Unlock all 6 clues before accusing'));
       btn.style.opacity = ready ? '1' : '0.6';
       btn.style.cursor = ready ? 'pointer' : 'not-allowed';
     }
 
-    function startGame() {
-      const randomIndex = Math.floor(Math.random() * cases.length);
-      currentCase = cases[randomIndex];
+    /* ====== Case selection ====== */
+    function pickCaseIndex() {
+      // Facilitator override: ?case=1..4
+      const forced = parseInt(new URLSearchParams(window.location.search).get("case"), 10);
+      if (forced >= 1 && forced <= cases.length) return forced - 1;
 
-      // shuffle tasks for this case so order changes every gameplay
-      const caseIdx = randomIndex;
-      tasks[caseIdx] = shuffleArray(tasks[caseIdx]);
+      // Otherwise deal from a shuffled deck so every case comes up before any repeats
+      if (!caseDeck.length) {
+        caseDeck = shuffleArray(cases.map((_, i) => i));
+        const last = caseDeck.length - 1;
+        if (last > 0 && caseDeck[last] === lastCaseIndex) {
+          [caseDeck[0], caseDeck[last]] = [caseDeck[last], caseDeck[0]];
+        }
+      }
+      lastCaseIndex = caseDeck.pop();
+      return lastCaseIndex;
+    }
+
+    function startGame() {
+      currentCaseIndex = pickCaseIndex();
+      currentCase = cases[currentCaseIndex];
+
+      // Shuffle the order clues appear in. Each clue keeps its own task,
+      // so the console you analyse always matches the clue it opens.
+      clueOrder = shuffleArray(currentCase.clues.map((_, i) => i));
 
       intro.classList.add("hidden");
       caseSection.classList.remove("hidden");
 
       // reset state
+      gameOver = false;
+      modalIsResult = false;
+      resultHtml = "";
       selectedSuspect = null;
-      document.getElementById("suspectSelect").selectedIndex = 0;
-      document.getElementById("accusedVisual").classList.add("hidden");
-      solved = Array(6).fill(false);
+      suspectSelect.selectedIndex = 0;
+      accusedVisual.classList.add("hidden");
+      confirmModal.style.display = "none";
+      modal.style.display = "none";
+      resultBtn.style.display = "none";
+      unlockHelper.textContent = HELPER_DEFAULT;
+      solved = Array(TOTAL_CLUES).fill(false);
+      missed = Array(TOTAL_CLUES).fill(false);
 
       // build clue buttons all locked
       clueButtons.innerHTML = "";
@@ -639,7 +708,6 @@
       // unlock initial
       unlockedCount = 0;
       for(let i=0;i<INITIAL_UNLOCK;i++){ unlockNextClue(); }
-      clueProgress.textContent = unlockedCount.toString();
       updateAccuseAvailability();
 
       // timer setup
@@ -652,30 +720,25 @@
 
     function handleClueClick(btn, index){
       if (btn.classList.contains("locked")) return;
-      if (solved[index]) { showClue(index); return; }
+      // Once the case is closed, every clue can be read freely for the debrief
+      if (gameOver || solved[index]) { showClue(index); return; }
       openTask(index);
     }
 
-    // Try Again helper
+    // New case helper (used by the result screen)
     function tryAgain() {
-      document.getElementById("modal").style.display = "none";
-      const tm = document.getElementById("taskModal");
-      if (tm) tm.style.display = "none";
       goBack();
     }
 
     function tick(){
       totalSeconds--;
       if (totalSeconds <= 0){
-        clearInterval(timerId); timerId = null;
-        clueText.innerHTML = "⏰ Time is up! Logs rotated and evidence lost.\n❌ The intruder remains unidentified.";
-        modal.style.display = "flex";
-        lockAllClues();
-        taskModal.style.display = "none";
+        totalSeconds = 0;
+        endGame("timeout");
         return;
       }
 
-      if (unlockedCount < 6){
+      if (unlockedCount < TOTAL_CLUES){
         cooldown--;
         if (cooldown <= 0){
           unlockNextClue();
@@ -689,11 +752,17 @@
     }
 
     function updateTopbar(){
-      globalTimer.textContent = formatMMSS(totalSeconds);
-      clueProgress.textContent = unlockedCount.toString();
-      unlockBadge.textContent = (unlockedCount < 6)
-        ? `Next clue in: ${formatMMSS(cooldown)}`
-        : "All clues unlocked";
+      globalTimer.textContent = formatMMSS(Math.max(0, totalSeconds));
+      clueProgress.textContent = String(
+        REQUIRE_SOLVED_FOR_ACCUSATION ? solved.filter(Boolean).length : unlockedCount
+      );
+      if (gameOver) {
+        unlockBadge.textContent = "Case closed";
+      } else {
+        unlockBadge.textContent = (unlockedCount < TOTAL_CLUES)
+          ? `Next clue in: ${formatMMSS(cooldown)}`
+          : "All clues unlocked";
+      }
     }
 
     function unlockNextClue(){
@@ -706,51 +775,61 @@
       updateAccuseAvailability();
     }
 
-    function lockAllClues(){
+    // At the end of a case every clue opens for review
+    function revealAllClues(){
       document.querySelectorAll(".clue-box").forEach(b=>{
-        b.classList.add("locked");
-        b.classList.remove("unlocked");
+        b.classList.remove("locked");
+        b.classList.add("unlocked");
       });
     }
 
     /* ====== TASK FLOW ====== */
     function openTask(clueIndex){
+      if (gameOver) return;
       workingClue = clueIndex;
-      const caseIdx = cases.findIndex(c=>c.title===currentCase.title);
-      const t = tasks[caseIdx][clueIndex];
+      const t = tasks[currentCaseIndex][clueOrder[clueIndex]];
 
       taskContext.textContent = t.context;
       taskQuestion.textContent = t.question;
-      taskHint.textContent = ""; // no hint yet
+      // if this task was already answered wrongly, keep the hint visible
+      taskHint.textContent = missed[clueIndex] ? "💡 Hint: " + t.hint : "";
       taskOptions.innerHTML = "";
-      t.options.forEach((opt, i)=>{
+
+      // show the options in random order
+      const order = shuffleArray(t.options.map((_, i) => i));
+      order.forEach(i => {
         const b = document.createElement("button");
-        b.textContent = `• ${opt}`;
-        b.onclick = ()=> submitTaskAnswer(i, t.correct, t.hint);
+        b.textContent = `• ${t.options[i]}`;
+        b.onclick = () => submitTaskAnswer(i === t.correct, t.hint, b);
         taskOptions.appendChild(b);
       });
 
       taskModal.style.display = "flex";
 
-      // clear old timer, start new 3-min timer for hint
+      // clear old timer, start a new one for the hint
       if (hintTimer) clearTimeout(hintTimer);
       hintTimer = setTimeout(()=>{
-        taskHint.textContent = "💡 Hint: " + t.hint;
-      }, 180000); // 3 minutes
+        if (!taskHint.textContent.includes("💡")) taskHint.textContent = "💡 Hint: " + t.hint;
+      }, HINT_DELAY_SECONDS * 1000);
     }
 
-    function submitTaskAnswer(choice, correct, hint){
-      if (choice === correct){
+    function submitTaskAnswer(isCorrect, hint, optionBtn){
+      if (gameOver) return;
+      if (isCorrect){
         solved[workingClue] = true;
         const btn = document.querySelector(`.clue-box[data-index="${workingClue}"]`);
         if (btn){ btn.classList.add("solved"); }
         taskModal.style.display = "none";
         if (hintTimer) clearTimeout(hintTimer);
         showClue(workingClue);
+        updateTopbar();
         updateAccuseAvailability();
       } else {
+        missed[workingClue] = true;
+        if (optionBtn) { optionBtn.disabled = true; optionBtn.style.opacity = '0.45'; optionBtn.style.textDecoration = 'line-through'; } // can't pay the penalty twice for the same option
         totalSeconds = Math.max(0, totalSeconds - WRONG_PENALTY_SECONDS);
-        taskHint.textContent = `❌ Not quite. ${WRONG_PENALTY_SECONDS}s penalty applied.`;
+        if (totalSeconds <= 0){ endGame("timeout"); return; }
+        taskHint.textContent = `❌ Not quite. ${WRONG_PENALTY_SECONDS}s penalty applied. 💡 Hint: ${hint}`;
         updateTopbar();
       }
     }
@@ -762,15 +841,28 @@
 
     /* ====== CLUE MODAL ====== */
     function showClue(index) {
-      clueText.textContent = currentCase.clues[index];
+      modalIsResult = false;
+      clueText.textContent = currentCase.clues[clueOrder[index]];
       modal.style.display = "flex";
     }
-    function closeModal() { modal.style.display = "none"; }
+    function closeModal() {
+      // The result screen is only left through its own buttons
+      if (modalIsResult) return;
+      modal.style.display = "none";
+    }
 
     /* ====== NAV ====== */
     function goBack() {
       if (timerId){ clearInterval(timerId); timerId = null; }
+      if (hintTimer){ clearTimeout(hintTimer); hintTimer = null; }
       currentCase = null;
+      currentCaseIndex = -1;
+      gameOver = false;
+      modalIsResult = false;
+      resultHtml = "";
+      unlockedCount = 0;
+      solved = [];
+      missed = [];
       caseSection.classList.add("hidden");
       intro.classList.remove("hidden");
       // reset topbar badges
@@ -778,11 +870,15 @@
       clueProgress.textContent = "0";
       unlockBadge.textContent = "Next clue in: --";
       taskModal.style.display = "none";
+      modal.style.display = "none";
+      confirmModal.style.display = "none";
+      resultBtn.style.display = "none";
       updateAccuseAvailability();
     }
 
     /* ====== ACCUSATION ====== */
     function accuseSuspect() {
+      if (gameOver) return;
       if (!canAccuse()) {
         alert(REQUIRE_SOLVED_FOR_ACCUSATION
           ? "You must solve all 6 clues before making an accusation."
@@ -790,87 +886,124 @@
         );
         return;
       }
-      const select = document.getElementById("suspectSelect");
-      const value = select.value;
-      if (!value) return;
+      const value = suspectSelect.value;
+      if (!suspectsData[value]) {
+        alert("Choose a suspect first.");
+        return;
+      }
       selectedSuspect = value;
       renderAccusedCard(value); // preview card immediately
-      document.getElementById("confirmModal").style.display = "block";
+      confirmModal.style.display = "block";
     }
     function cancelAccusation() {
       selectedSuspect = null;
-      document.getElementById("suspectSelect").selectedIndex = 0;
-      document.getElementById("accusedVisual").classList.add("hidden");
-      document.getElementById("confirmModal").style.display = "none";
+      suspectSelect.selectedIndex = 0;
+      accusedVisual.classList.add("hidden");
+      confirmModal.style.display = "none";
     }
 
     function confirmAccusation() {
-      document.getElementById("confirmModal").style.display = "none";
+      confirmModal.style.display = "none";
+      if (gameOver || !currentCase || !suspectsData[selectedSuspect]) return;
       const isCorrect = selectedSuspect === correctSuspect[currentCase.title];
+      endGame(isCorrect ? "win" : "wrong");
+    }
 
-      // stop timer on decision
+    /* ====== END OF CASE (win / wrong accusation / time up) ======
+       The decision is final: the timer stops, accusing is disabled,
+       and the solution is shown whatever the outcome. */
+    function endGame(outcome) {
+      gameOver = true;
       if (timerId){ clearInterval(timerId); timerId = null; }
+      if (hintTimer){ clearTimeout(hintTimer); hintTimer = null; }
+      taskModal.style.display = "none";
+      confirmModal.style.display = "none";
+      revealAllClues();
+      updateTopbar();
+      updateAccuseAvailability();
+      unlockHelper.textContent = "Case closed. All clues are open for review.";
+      resultBtn.style.display = "";
 
-      if (isCorrect){
-        // Calculate score: 10 pts per second left
-        const score = totalSeconds * 10;
+      const d = currentCase.debrief || {};
+      const key = d.keyPoints || [];
+      const mis = d.misdirections || [];
+      const guiltyName = suspectsData[correctSuspect[currentCase.title]].name;
 
-        // build debrief
-        const d = currentCase.debrief;
-        const key = d?.keyPoints || [];
-        const mis = d?.misdirections || [];
-        const solvedArt = `<img src='assets/img/case_solved.png' alt='Case Solved' style='max-width:120px; border: 1px solid var(--cyber); display:block; margin:0 auto 16px; border-radius:50%;'/>`;
-        const lines = [
+      let art, head;
+      if (outcome === "win") {
+        const firstTry = solved.filter((s, i) => s && !missed[i]).length;
+        const timeBonus = totalSeconds * SCORE_PER_SECOND_LEFT;
+        const score = SCORE_BASE + firstTry * SCORE_FIRST_TRY_BONUS + timeBonus;
+        art = "<img src='assets/img/case_solved.png' alt='Case Solved' style='max-width:120px; border: 1px solid var(--cyber); display:block; margin:0 auto 16px; border-radius:50%;'/>";
+        head = [
           "✅ Case closed. Well done, detective!",
           `🏆 Score: ${score.toLocaleString()} pts`,
-          "",
-          "— Key Evidence —",
-          ...key.map((k,i)=>`${i+1}. ${k}`),
-          "",
-          "— Misdirections —",
-          ...mis.map((m,i)=>`${i+1}. ${m}`)
-        ].join("\n");
-
-        const html = solvedArt + lines
-          .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-          .replace(/\n/g,"<br>");
-        clueText.innerHTML = html;
+          `(right suspect ${SCORE_BASE.toLocaleString()} + ${firstTry} first-try clues × ${SCORE_FIRST_TRY_BONUS} + ${formatMMSS(totalSeconds)} left × ${SCORE_PER_SECOND_LEFT}/s)`
+        ];
       } else {
-        const failArt = `<img src='assets/img/suspect_escape.png' alt='Suspect Escapes' style='max-width:120px; border: 1px solid #ff0000; display:block; margin:0 auto 16px; border-radius:50%;'/>`;
-        clueText.innerHTML = failArt + 
-          "❌ Game Over — The suspect escapes... The real intruder is still out there." +
-          `<div style="text-align:center; margin-top:12px;">
-            <button onclick="tryAgain()">🔁 Try Again</button>
-          </div>`;
+        art = "<img src='assets/img/suspect_escape.png' alt='Suspect Escapes' style='max-width:120px; border: 1px solid #ff0000; display:block; margin:0 auto 16px; border-radius:50%;'/>";
+        if (outcome === "wrong") {
+          const accusedName = suspectsData[selectedSuspect].name;
+          head = [
+            "❌ Game Over — The suspect escapes...",
+            `You accused ${accusedName}. The real intruder was ${guiltyName}.`
+          ];
+        } else {
+          head = [
+            "⏰ Time is up! Logs rotated and evidence lost.",
+            `❌ No one was accused. The intruder was ${guiltyName}.`
+          ];
+        }
       }
+
+      const lines = [
+        ...head,
+        "",
+        "— Key Evidence —",
+        ...key.map((k,i)=>`${i+1}. ${k}`),
+        "",
+        "— Misdirections —",
+        ...mis.map((m,i)=>`${i+1}. ${m}`)
+      ].join("\n");
+
+      const buttons =
+        "<div style='text-align:center; margin-top:16px;'>" +
+        "<button onclick='reviewClues()'>📂 Review clues</button> " +
+        "<button onclick='tryAgain()'>🔁 New case</button>" +
+        "</div>";
+
+      resultHtml = art + escapeHtml(lines).replace(/\n/g,"<br>") + buttons;
+      showResult();
+    }
+
+    function showResult() {
+      if (!gameOver || !resultHtml) return;
+      modalIsResult = true;
+      clueText.innerHTML = resultHtml;
       modal.style.display = "flex";
-      const taskModalEl = document.getElementById("taskModal");
-      if (taskModalEl) taskModalEl.style.display = "none";
+    }
+
+    // Close the result and browse the (now fully open) clues
+    function reviewClues() {
+      modalIsResult = false;
+      modal.style.display = "none";
     }
 
     function renderAccusedCard(suspectKey) {
-      const container = document.getElementById("accusedVisual");
-      const suspectsData = {
-        alex:   { name: "Alex G.", img: "1.png",      desc: "A former IT technician recently let go after a heated argument." },
-        jamie:  { name: "Jamie R.", img: "2.png",     desc: "A young student known for hacking small websites just for fun." },
-        sarah:  { name: "Sarah J.", img: "3.png",     desc: "A respected marketing manager... with unexplained meetings." },
-        hacker: { name: "Unknown (The Shadow)", img: "hacker.png", desc: "No records. No identity. Just traces left in the system..." }
-      };
       const s = suspectsData[suspectKey];
       if (!s) return;
-      container.innerHTML = `
+      accusedVisual.innerHTML = `
         <div class="suspect" style="margin: 0 auto;">
           <img src="assets/img/${s.img}" alt="${s.name}">
           <h4>${s.name}</h4>
           <p>${s.desc}</p>
         </div>
       `;
-      container.classList.remove("hidden");
+      accusedVisual.classList.remove("hidden");
     }
     function previewSuspect() {
-      const select = document.getElementById("suspectSelect");
-      const value = select.value;
-      if (!value) return;
+      const value = suspectSelect.value;
+      if (!suspectsData[value]) return;
       renderAccusedCard(value);
     }
 
@@ -879,6 +1012,10 @@
       const m = Math.floor(total/60);
       const s = total%60;
       return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     }
 
     // Fisher-Yates shuffle
